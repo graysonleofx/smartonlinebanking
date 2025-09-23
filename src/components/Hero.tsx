@@ -40,7 +40,7 @@ const Hero = () => {
                 <div className="text-white/80">Active Users</div>
               </div>
               <div>
-                <div className="text-3xl font-bold">₦50M+</div>
+                <div className="text-3xl font-bold">$50M+</div>
                 <div className="text-white/80">Transferred</div>
               </div>
               <div>

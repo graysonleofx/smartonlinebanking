@@ -72,8 +72,8 @@ const Dashboard = () => {
           setUserSession(JSON.parse(session));
         }
 
-       const user = JSON.parse(session);
-      //  console.log(user);
+        const user = JSON.parse(session);
+        //  console.log(user);
         const {data, error} = await supabase 
           .from('accounts')
           .select('checking_account_balance, savings_account_balance')

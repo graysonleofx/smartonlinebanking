@@ -8,7 +8,7 @@ import OpenAccount from "./pages/OpenAccount.jsx";
 import Login from "./pages/Login.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Transfer from "./pages/Transfer";
-import Withdraw from "./pages/Withdraw";
+import Withdraw from "./pages/Withdraw.jsx";
 import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
