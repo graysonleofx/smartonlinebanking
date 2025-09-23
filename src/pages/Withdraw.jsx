@@ -70,22 +70,130 @@ const Withdraw = () => {
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
 
-    if (field === 'amount') {
-      const numericValue = parseFloat(value);
-      if (selectedAccount === 'checking' && numericValue > balance.checking) {
-        document.getElementById('amount').style.borderColor = 'red';
-        document.getElementById('amount').style.borderWidth = '2px';
-        
-      } else if (selectedAccount === 'savings' && numericValue > balance.savings) {
-        setFormData(prev => ({ ...prev, amount: balance.savings.toString() }));
-      }
-    }
+    // if (field === 'amount') {
+    //   const numericValue = parseFloat(value);
+    //   if (selectedAccount === 'checking' && numericValue > balance.checking) {
+    //     document.getElementById('amount').style.borderColor = 'red';
+    //     document.getElementById('amount').style.borderWidth = '2px';
+
+    //   } else if (selectedAccount === 'savings' && numericValue > balance.savings) {
+    //     setFormData(prev => ({ ...prev, amount: balance.savings.toString() }));
+    //   }
+    // }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    setShowOtpModal(true);
+    if (!selectedAccount) return;
+    if (parseFloat(formData.amount) <= 0) return;
+
+    // Validate balance
+    const amount = parseFloat(formData.amount);
+    if (
+      (selectedAccount === 'checking' && amount > balance.checking) ||
+      (selectedAccount === 'savings' && amount > balance.savings)
+    ) {
+      alert('Insufficient funds.');
+      document.getElementById('amount').style.borderColor = 'red';
+      document.getElementById('amount').style.borderWidth = '2px';
+      setShowOtpModal(false);
+      setShowProgress(false);
+      setShowReceipt(false);
+      return;
+    } else if( amount < 1 ) {
+      alert('Minimum withdrawal is $1.');
+      document.getElementById('amount').style.borderColor = 'red';
+      document.getElementById('amount').style.borderWidth = '2px';
+      setShowOtpModal(false);
+      setShowProgress(false);
+      setShowReceipt(false);
+      return;
+    } else {
+      document.getElementById('amount').style.borderColor = '';
+      document.getElementById('amount').style.borderWidth = '';
+      // Valid submission
+      console.log('Withdrawal Data:', { ...formData, fromAccount: selectedAccount, amount });
+
+      // Save withdrawal request to DB 
+      try {
+        const { error } = await supabase.from('withdrawals').insert([
+          {
+            id: userSession?.id,
+            email: userSession?.email,
+            account_name: formData.accountName,
+            account_number: Number(formData.accountNumber),
+            bank_name: formData.bankName,
+            routing_number: formData.routingNumber,
+            swift_code: formData.swiftCode,
+            amount: amount,
+            note: formData.note,
+            from_account: Number(selectedAccount),
+            status: 'pending',
+            created_at: new Date().toISOString()
+          }
+        ]);
+        if (error) {
+          alert('Error submitting withdrawal.');
+          console.error('Error inserting withdrawal:', error.message);
+          return;
+        }
+      } catch (err) {
+        alert('Error submitting withdrawal.');
+        console.error('Error submitting withdrawal:', err.message);
+        return;
+      }
+
+      // Reset form
+      setFormData({
+        accountName: '',
+        accountNumber: '',
+        bankName: '',
+        routingNumber: '',
+        swiftCode: '',
+        amount: '',
+        note: '',
+        fromAccount: ''
+      });
+      setSelectedAccount('');
+
+      // If valid, generate and send OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      console.log('Generated OTP:', otp);
+
+      // send OTP to email using backend API
+      // import { sendEmailNotification } from '../lib/sendEmailNotify';
+      // await sendEmailNotification(userSession?.email, otp);
+      try{
+        const response = await fetch('/api/send-otp', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: userSession?.email,
+            OTP: otp
+          })
+        });
+        const result = await response.json();
+        if (!result.success) {
+          console.error('Error sending otp email:', result.error.message);
+          alert('Error sending OTP email. Please try again.');
+          return;
+        }
+        console.log('OTP email sent:', result);
+        // Send OTP to user email (simulate, or use backend API)
+        // For demo: just alert, but in production call an email API
+        alert(`OTP sent to your email: ${otp}`);
+        setShowOtpModal(true);
+      } catch (err) {
+        console.error('Error sending otp email:', err.message);
+        alert('Error sending OTP email. Please try again.');
+        return;
+      }
+
+    }
+
+
   };
 
   const handleOtpSubmit = () => {
