@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import OpenAccount from "./pages/OpenAccount.jsx";
 import Login from "./pages/Login.jsx";
+import ContactUs from "./pages/contact.jsx";
+import AboutUs from "./pages/about-us.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Transfer from "./pages/Transfer";
 import Withdraw from "./pages/Withdraw.jsx";
@@ -31,6 +33,8 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/transfer" element={<Transfer />} />
           <Route path="/withdraw" element={<Withdraw />} />
+          <Route path="/contact" element={<ContactUs />} />
+          <Route path="/about-us" element={<AboutUs />} />
           
           {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />

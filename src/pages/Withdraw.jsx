@@ -158,22 +158,30 @@ const handleSubmit = async (e) => {
     });
     setSelectedAccount('');
 
-    try {
-      // Generate a 6-digit OTP
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      const userEmail = userSession?.email;
-      console.log('Generated OTP:', otp);
+    // try {
+    //   // Generate a 6-digit OTP
+    //   const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    //   const userEmail = userSession?.email;
+    //   console.log('Generated OTP:', otp);
 
-      // Send OTP to user email
-      await sendOtp(userEmail, otp);
+    //   // Send OTP to user email
+    //   await sendOtp(userEmail, otp);
 
-      } catch (err) {
-        console.error('Error sending otp email:', err.message);
-        alert('Error sending OTP email. Please try again.');
-        return;
-      }
+    // } catch (err) {
+    //   console.error('Error sending otp email:', err.message);
+    //   alert('Error sending OTP email. Please try again.');
+    //   return;
+    // }
 
       // Show OTP modal
+
+    try {
+      await sendOtp(userSession?.email);  // ✅ backend handles OTP generation
+    } catch (err) {
+      console.error('Error sending OTP email:', err.message);
+      alert('Error sending OTP email. Please try again.');
+      return;
+    }
 
       setOtpValue('');
       setShowOtpModal(true);
@@ -188,18 +196,17 @@ const handleSubmit = async (e) => {
       alert('Please enter a valid 6-digit OTP.');
       return;
     }
-
     // Verify OTP
     verifyOtp(userSession?.email, otpValue)
-      .then(response => {
-        if (response.success) {
+      .then((res) => {
+        if (res.success) {
           // OTP verified
           proceedToProgress();
         } else {
-          alert(response.message || 'Invalid OTP. Please try again.');
+          alert(res.message || 'Invalid OTP. Please try again.');
         }
       })
-      .catch(err => {
+      .catch((err) => {
         console.error('Error verifying OTP:', err.message);
         alert('Error verifying OTP. Please try again.');
       });

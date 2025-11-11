@@ -4,7 +4,7 @@ import ceoImage from '@/assets/ceo-portrait.jpg';
 
 const Mission = () => {
   return (
-    <section className="py-24 bg-background">
+    <section className="py-24 bg-background" id='about-us'>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           {/* Image */}
@@ -53,7 +53,7 @@ const Mission = () => {
               </div>
             </div>
 
-            <Button variant="hero" size="lg" className="mt-8">
+            <Button variant="hero" size="lg" className="mt-8" onClick={() => window.location.href = '/about-us'}>
               Learn More About Us
             </Button>
           </div>

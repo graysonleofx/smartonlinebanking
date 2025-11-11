@@ -8,11 +8,12 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
 
   const navigation = [
-    { name: 'Home', href: '/#home' },
-    { name: 'Features', href: '/#features' },
-    { name: 'Services', href: '/#services' },
-    { name: 'FAQ', href: '/#faq' },
-    { name: 'Contact', href: '/#contact' },
+    { name: 'Home', href: '#home' },
+    {name: 'About', href: '#about-us'},
+    { name: 'Features', href: '#features' },
+    { name: 'Services', href: '#services' },
+    { name: 'FAQ', href: '#faq' },
+    { name: 'Contact', href: '#contact' },
   ];
 
   useEffect(() => {
@@ -40,10 +41,26 @@ const Header = () => {
   }, []);
 
   const handleSmoothScroll = (href: string) => {
-    const targetId = href.substring(1);
+    // href is a hash like "#features"
+    const targetId = href.startsWith('#') ? href.substring(1) : href;
+    const isSamePage = window.location.pathname === '/' || window.location.pathname === '/home';
+
+    if (!isSamePage) {
+      // navigate to root with hash so browser loads that page and jumps to the element
+      // using location.href causes a full navigation which ensures the target section exists
+      window.location.href = `/${href}`;
+      return;
+    }
+
+    // if already on the page that contains sections -> smooth scroll
     const element = document.getElementById(targetId);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
+      // update the URL hash without reloading
+      history.replaceState(null, '', `/${href}`);
+    } else {
+      // fallback: set hash so browser may try to jump
+      window.location.hash = href;
     }
     setIsMenuOpen(false);
   };
