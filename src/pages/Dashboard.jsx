@@ -226,28 +226,6 @@ const Dashboard = () => {
     bankName: "Federal Edge Finance Bank",
     routingNumber: "021000021"
   };
-  const mockTransactions = [{
-    id: 1,
-    type: 'Credit',
-    description: 'Initial Deposit',
-    amount: 15750.00,
-    date: '2024-01-15',
-    status: 'Completed'
-  }, {
-    id: 2,
-    type: 'Debit',
-    description: 'Online Purchase',
-    amount: -25.99,
-    date: '2024-01-14',
-    status: 'Completed'
-  }, {
-    id: 3,
-    type: 'Credit',
-    description: 'Referral Bonus',
-    amount: 5000.00,
-    date: '2024-01-13',
-    status: 'Completed'
-  }];
   const sidebarItems = [{
     id: 'home',
     label: 'Home',
@@ -310,24 +288,202 @@ const Dashboard = () => {
   return(
     <div className="min-h-screen bg-background pb-20 md:pb-0">
       {/* Top Bar */}
-      <header className="bg-card border-b px-4 py-3 md:py-4 flex items-center justify-between">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-base md:text-xl font-semibold text-primary truncate">Welcome back, {userName.split(' ')[0]}!</h1>
-          <p className="text-xs md:text-sm text-muted-foreground">Account: {accountNumber}</p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon" className="h-8 w-8 md:h-10 md:w-10">
-            <Bell className="h-4 w-4 md:h-5 md:w-5" />
-          </Button>
-          <Button variant="ghost" onClick={handleLogout} className="hidden md:flex">
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
-        </div>
-      </header>
+        <header className="bg-card border-b px-4 py-3 md:py-4 flex items-center justify-between">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-base md:text-xl font-semibold text-primary truncate">Welcome back, {userName.split(' ')[0]}!</h1>
+            <p className="text-xs md:text-sm text-muted-foreground">Account: {accountNumber}</p>
+          </div>
 
-      <div className="flex">
-        {/* Desktop Sidebar */}
+          {/* Profile avatar with preview + change (saves to & retrieves from Supabase) */}
+          <details
+            className="relative profile-details"
+            onToggle={async (e) => {
+              try {
+              if (!e.currentTarget.open) return;
+              // fetch profile image from Supabase when opening
+              const session = userSession || JSON.parse(localStorage.getItem('userSession') || 'null');
+              if (!session?.email) return;
+              const { data, error } = await supabase
+                .from('accounts')
+                .select('profile_image')
+                .eq('email', session.email)
+                .single();
+              if (error && error.code !== 'PGRST116') {
+                console.error('Error fetching profile image', error);
+                return;
+              }
+              if (data?.profile_image) {
+                localStorage.setItem('profileImage', data.profile_image);
+                const thumb = document.getElementById('profile-img');
+                const big = document.getElementById('profile-large-img');
+                if (thumb) { thumb.src = data.profile_image; thumb.style.display = ''; }
+                if (big) { big.src = data.profile_image; big.style.display = ''; }
+              } else {
+                localStorage.removeItem('profileImage');
+                const thumb = document.getElementById('profile-img');
+                const big = document.getElementById('profile-large-img');
+                if (thumb) { thumb.removeAttribute('src'); thumb.style.display = 'none'; }
+                if (big) { big.removeAttribute('src'); big.style.display = 'none'; }
+              }
+              } catch (err) {
+              console.error('Failed to load profile image', err);
+              }
+            }}
+            >
+            <summary className="list-none">
+              <div className="flex items-center space-x-2">
+              <img
+                id="profile-img"
+                src={typeof window !== 'undefined' ? (localStorage.getItem('profileImage') || '') : ''}
+                alt="Profile"
+                className="h-10 w-10 rounded-full object-cover cursor-pointer border"
+                onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                }}
+              />
+              {! (typeof window !== 'undefined' && localStorage.getItem('profileImage')) && (
+                <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold">
+                {userName ? userName.split(' ').map(n=>n[0]).slice(0,2).join('') : 'U'}
+                </div>
+              )}
+              </div>
+            </summary>
+
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+              <div className="bg-card rounded-lg w-full max-w-md p-5 relative">
+              <button
+                onClick={(e) => e.currentTarget.closest('details')?.removeAttribute('open')}
+                className="absolute top-3 right-3 text-sm text-muted-foreground"
+                aria-label="Close profile"
+              >
+                Close
+              </button>
+
+              <div className="flex flex-col items-center">
+                <img
+                id="profile-large-img"
+                src={typeof window !== 'undefined' ? (localStorage.getItem('profileImage') || '') : ''}
+                alt="Large profile"
+                className="h-36 w-36 rounded-full object-cover border"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+
+                {! (typeof window !== 'undefined' && localStorage.getItem('profileImage')) && (
+                <div className="h-36 w-36 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-2xl">
+                  {userName ? userName.split(' ').map(n=>n[0]).slice(0,2).join('') : 'U'}
+                </div>
+                )}
+
+                <h3 className="mt-4 text-base font-semibold">{userName}</h3>
+                <p className="text-xs text-muted-foreground mt-1">Tap Change to upload a new profile picture</p>
+
+                {/* hidden file input */}
+                <input
+                id="profile-file"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (e) => {
+                  try {
+                  const f = e.target.files && e.target.files[0];
+                  if (!f) return;
+                  const reader = new FileReader();
+                  reader.onload = async () => {
+                    try {
+                    const dataUrl = reader.result;
+                    // update Supabase accounts.profile_image column
+                    const session = userSession || JSON.parse(localStorage.getItem('userSession') || 'null');
+                    if (!session?.email) {
+                      console.warn('No session found - cannot save profile image to Supabase');
+                    } else {
+                      const { error } = await supabase
+                      .from('accounts')
+                      .update({ profile_image: dataUrl })
+                      .eq('email', session.email);
+                      if (error) {
+                      console.error('Error saving profile image to Supabase', error);
+                      }
+                    }
+                    // persist locally and update UI
+                    localStorage.setItem('profileImage', dataUrl);
+                    const thumb = document.getElementById('profile-img');
+                    const big = document.getElementById('profile-large-img');
+                    if (thumb) { thumb.src = dataUrl; thumb.style.display = ''; }
+                    if (big) { big.src = dataUrl; big.style.display = ''; }
+                    toast?.({ title: 'Profile updated', description: 'Your profile picture was updated.' });
+                    } catch (err) {
+                    console.error('Profile image save error', err);
+                    }
+                  };
+                  reader.readAsDataURL(f);
+                  } catch (err) {
+                  console.error('File read/upload error', err);
+                  } finally {
+                  e.target.value = '';
+                  }
+                }}
+                />
+
+                <div className="mt-4 flex gap-2 w-full">
+                <label htmlFor="profile-file" className="flex-1 inline-flex items-center justify-center px-3 py-2 rounded-md border cursor-pointer text-sm">
+                  Change Photo
+                </label>
+                <button
+                  type="button"
+                  onClick={async () => {
+                  try {
+                    const session = userSession || JSON.parse(localStorage.getItem('userSession') || 'null');
+                    if (session?.email) {
+                    const { error } = await supabase
+                      .from('accounts')
+                      .update({ profile_image: null })
+                      .eq('email', session.email);
+                    if (error) console.error('Error removing profile image from Supabase', error);
+                    }
+                    localStorage.removeItem('profileImage');
+                    const thumb = document.getElementById('profile-img');
+                    const big = document.getElementById('profile-large-img');
+                    if (thumb) { thumb.removeAttribute('src'); thumb.style.display = 'none'; }
+                    if (big) { big.removeAttribute('src'); big.style.display = 'none'; }
+                    toast?.({ title: 'Removed', description: 'Profile image removed.' });
+                  } catch (err) {
+                    console.error('Remove profile image error', err);
+                  }
+                  }}
+                  className="flex-1 inline-flex items-center justify-center px-3 py-2 rounded-md border text-sm"
+                >
+                  Remove
+                </button>
+                </div>
+              </div>
+              </div>
+            </div>
+          </details>
+
+          <div className="flex items-center space-x-2">
+            {/* notifications button (kept for layout) */} 
+
+            {/* Mobile: icon-only logout */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden h-8 w-8"
+              onClick={handleLogout}
+              aria-label="Logout"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+
+            {/* Desktop: full logout with label */}
+            <Button variant="ghost" onClick={handleLogout} className="hidden md:flex">
+          <LogOut className="h-4 w-4 mr-2" />
+          Logout
+            </Button>
+          </div>
+        </header>
+
+        <div className="flex">
+          {/* Desktop Sidebar */}
         <aside className="hidden md:block w-64 bg-card border-r min-h-screen p-4">
           <div className="space-y-2">
             {sidebarItems.map(item => <Button key={item.id} variant={activeTab === item.id ? "secondary" : "ghost"} className="w-full justify-start" onClick={() => setActiveTab(item.id)}>
@@ -494,7 +650,7 @@ const Dashboard = () => {
 
               {/* Referral Widget */}
               <Card>
-                <CardContent className="p-4 md:p-6">
+                <CardContent className="p-4 md:p-6 mb-4" style={{marginBottom: '60px'}}>
                   <div className="flex items-center space-x-3 md:space-x-4">
                     <Gift className="h-6 w-6 md:h-8 md:w-8 text-accent flex-shrink-0" />
                     <div className="flex-1 min-w-0">
@@ -508,7 +664,7 @@ const Dashboard = () => {
                   
                   {/* Referral Program Card - Shows at bottom when Share Code is clicked */}
                   {showReferralCard && <div className="mt-6 p-4 bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/10 rounded-lg">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12">
                     <div className="text-center p-3 bg-background rounded-lg">
                       <p className="text-lg font-bold text-primary font-mono">REF-{userSession.accountNumber}</p>
                       <p className="text-xs text-muted-foreground">Referral Code</p>

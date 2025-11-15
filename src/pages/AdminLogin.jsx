@@ -6,28 +6,23 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import supabase from '@/lib/supabaseClient'; // your Supabase client
 
 const AdminLogin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.email || !formData.password) {
       toast({
         title: "Error",
@@ -38,34 +33,44 @@ const AdminLogin = () => {
     }
 
     setIsLoading(true);
+
+    // Optional: Hardcoded admin credentials (for extra security)
+    const hardcodedAdmin = formData.email === 'admin@thisbank.co' && formData.password === '1937519375';
     
-    // Simulate admin authentication
-    setTimeout(() => {
-      // Mock admin credentials check
-      if (formData.email === 'admin@bank.com' && formData.password === 'admin123') {
-        localStorage.setItem('adminSession', JSON.stringify({
-          id: 'admin-001',
-          email: formData.email,
-          role: 'admin',
-          loginTime: new Date().toISOString()
-        }));
-        
-        toast({
-          title: "Login Successful",
-          description: "Welcome to Admin Dashboard"
-        });
-        
-        navigate('/admin/dashboard');
-      } else {
-        toast({
-          title: "Login Failed",
-          description: "Invalid credentials",
-          variant: "destructive"
-        });
-      }
-      
+    // Supabase authentication
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: formData.email,
+      password: formData.password
+    });
+
+    if (error || !data.user) {
+      toast({
+        title: "Authentication Failed",
+        description: error?.message || "Invalid credentials",
+        variant: "destructive"
+      });
       setIsLoading(false);
-    }, 1000);
+      return;
+    }
+
+    // Optional: You can also check if the user is an admin in Supabase (role column)
+    // Example: const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
+    // if (profile?.role !== 'admin') { ... }
+
+    // Store admin session in localStorage for dashboard protection
+    localStorage.setItem('admin', JSON.stringify({
+      isAdmin: true, // or set based on Supabase role if you check
+      email: formData.email,
+      supabaseUser: data.user
+    }));
+
+    toast({
+      title: "Login Successful",
+      description: "Welcome to the Admin Dashboard!",
+    });
+
+    setIsLoading(false);
+    navigate('/admin/dashboard');
   };
 
   return (
@@ -86,7 +91,7 @@ const AdminLogin = () => {
               Enter your admin credentials to access the dashboard
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
@@ -95,13 +100,13 @@ const AdminLogin = () => {
                   id="email"
                   name="email"
                   type="email"
-                  placeholder="admin@bank.com"
+                  placeholder="email@example.com"
                   value={formData.email}
                   onChange={handleInputChange}
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
@@ -121,27 +126,15 @@ const AdminLogin = () => {
                     className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                     onClick={() => setShowPassword(!showPassword)}
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                 </div>
               </div>
 
-              <Button 
-                type="submit" 
-                className="w-full" 
-                disabled={isLoading}
-              >
+              <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Authenticating..." : "Login to Admin Dashboard"}
               </Button>
             </form>
-
-            <div className="mt-6 text-center text-sm text-muted-foreground">
-              <p>Demo credentials: admin@bank.com / admin123</p>
-            </div>
           </CardContent>
         </Card>
       </div>
@@ -150,3 +143,4 @@ const AdminLogin = () => {
 };
 
 export default AdminLogin;
+

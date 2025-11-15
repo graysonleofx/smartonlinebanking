@@ -204,7 +204,7 @@ const OpenAccount = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="nationalId">National ID / BVN (Optional)</Label>
+                  <Label htmlFor="nationalId">SSN</Label>
                   <Input
                     id="nationalId"
                     name="nationalId"
@@ -226,7 +226,7 @@ const OpenAccount = () => {
                     placeholder="Enter referral code (e.g., REF-3032123456)"
                   />
                   <p className="text-sm text-muted-foreground mt-1">
-                    Have a referral code? Enter it and both you and your referrer get ₦5,000!
+                    Have a referral code? Enter it and both you and your referrer get $5,000!
                   </p>
                 </div>
 
