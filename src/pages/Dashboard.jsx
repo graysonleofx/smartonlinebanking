@@ -8,13 +8,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import ProfileSection from '@/components/ProfileSection';
+import ProfileSection from '@/components/ProfileSection.jsx';
 import SupportSection from '@/components/SupportSection';
 import { useToast } from '@/hooks/use-toast';
 import { Home, CreditCard, ArrowDownToLine, ArrowUpFromLine, Send, User, HelpCircle, LogOut, Bell, Eye, EyeOff, Gift, Settings, Copy, Check } from 'lucide-react';
 import supabase from  '../lib/supabaseClient';
 import { data } from 'autoprefixer';
-import { use } from 'react';
 const Dashboard = () => {
   const navigate = useNavigate();
   const {
@@ -32,6 +31,7 @@ const Dashboard = () => {
   const [copied, setCopied] = useState('');
   const [showReferralCard, setShowReferralCard] = useState(false);
   const [referralCodeCopied, setReferralCodeCopied] = useState(false);
+  const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [balance, setBalance] = useState({
     checking: null,
@@ -40,27 +40,6 @@ const Dashboard = () => {
   const [userName, setUserName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
 
-  // const fetchBalances = async(email) => {
-  //   const {data, error} = await supabase 
-  //     .from('accounts')
-  //     .select('checking_account_balance, savings_account_balance')
-  //     .eq('email', email)
-
-  //     if(data && data.length > 0) {
-  //     const {checking_account_balance, savings_account_balance} = data[0];
-
-  //     setCheckingBalance(checking_account_balance);
-  //     setSavingsBalance(savings_account_balance);
-  //     return {checking: checking_account_balance, savings: savings_account_balance};
-  //   }
-
-  //   if(error) {
-  //     console.error('Error fetching balances', error.message);
-  //     return null;
-  //   }
-
-  //   return data
-  // }
   useEffect(() => {
     const fetchBalances = async() => {
       try {
@@ -168,8 +147,36 @@ const Dashboard = () => {
       }
     };
 
+    const fetchTransactions = async () => {
+    try {
+      const session = localStorage.getItem('userSession');
+      if (!session) return;
+
+      const user = JSON.parse(session);
+
+      const { data, error } = await supabase
+        .from('transactions') // your table name
+        .select('*')
+        .eq('email', user.email)
+        .order('date', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching transactions:', error.message);
+        return;
+      }
+
+      if (data) {
+        setTransactions(data);
+      }
+    } catch (err) {
+      console.error('Fetch transactions error:', err.message);
+    }
+  };
+
+
     fetchBalances();
-    setBalance(data[0])
+    fetchTransactions();
+    setBalance(data[0]);
     fetchName();
     fetchAccountNumber();
 
@@ -216,7 +223,7 @@ const Dashboard = () => {
   const bankDetails = {
     accountName: "Smart Digital Bank",
     accountNumber: "3032410090",
-    bankName: "First National Bank",
+    bankName: "Federal Edge Finance Bank",
     routingNumber: "021000021"
   };
   const mockTransactions = [{
@@ -271,11 +278,6 @@ const Dashboard = () => {
     label: 'Dashboard',
     icon: Home
   }, {
-    id: 'transfer',
-    label: 'Transfer',
-    icon: Send,
-    action: () => navigate('/transfer')
-  }, {
     id: 'deposit',
     label: 'Deposit',
     icon: ArrowDownToLine,
@@ -286,16 +288,27 @@ const Dashboard = () => {
     icon: ArrowUpFromLine,
     action: () => navigate('/withdraw')
   }, {
-    id: 'profile',
-    label: 'Profile',
-    icon: User
-  }];
+      id: 'transactions',
+      label: 'Transactions',
+      icon: CreditCard,
+      action: () => setActiveTab('transactions')
+    } , {
+      id: 'profile',
+      label: 'Profile',
+      icon: User
+    }, {
+      id: 'support',
+      label: 'Support',
+      icon: HelpCircle
+    }
+  ];
   if (!userSession) {
     return <div>Loading...</div>;
   }
   // const checking = balance?.checking_account_balance  ?? 0;
   // const savings = balance?.savings_account_balance  ?? 0;
-  return <div className="min-h-screen bg-background pb-20 md:pb-0">
+  return(
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
       {/* Top Bar */}
       <header className="bg-card border-b px-4 py-3 md:py-4 flex items-center justify-between">
         <div className="min-w-0 flex-1">
@@ -407,7 +420,7 @@ const Dashboard = () => {
                   <div className="bg-gradient-primary p-4 md:p-6 rounded-lg text-white">
                     <div className="flex justify-between items-start mb-6 md:mb-8">
                       <div>
-                        <p className="text-sm opacity-80">Smart Bank</p>
+                        <p className="text-sm opacity-80">Federal Edge Finance</p>
                         <p className="text-xs opacity-60">Virtual Debit Card</p>
                       </div>
                       <div className="text-right">
@@ -433,36 +446,50 @@ const Dashboard = () => {
 
               {/* Recent Transactions */}
               <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base md:text-lg">Recent Transactions</CardTitle>
-                  <CardDescription className="text-xs md:text-sm">Your latest account activity</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="text-xs md:text-sm">Description</TableHead>
-                          <TableHead className="text-xs md:text-sm">Amount</TableHead>
-                          <TableHead className="text-xs md:text-sm hidden md:table-cell">Date</TableHead>
-                          <TableHead className="text-xs md:text-sm">Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {mockTransactions.map(transaction => <TableRow key={transaction.id}>
-                            <TableCell className="text-xs md:text-sm">{transaction.description}</TableCell>
-                            <TableCell className={`text-xs md:text-sm ${transaction.amount > 0 ? 'text-banking-blue' : 'text-banking-orange'}`}>
-                              {transaction.amount > 0 ? '+' : ''}${Math.abs(transaction.amount).toLocaleString()}
-                            </TableCell>
-                            <TableCell className="text-xs md:text-sm hidden md:table-cell">{transaction.date}</TableCell>
-                            <TableCell>
-                              <Badge variant="secondary" className="text-xs">{transaction.status}</Badge>
-                            </TableCell>
-                          </TableRow>)}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base md:text-lg">Recent Transactions</CardTitle>
+                <CardDescription className="text-xs md:text-sm">Your latest account activity</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {transactions.length === 0 ? (
+                <div className="py-6 text-center text-sm text-muted-foreground">No transactions yet</div>
+                ) : (
+                <div className="overflow-x-auto">
+                <Table>
+                <TableHeader>
+                  <TableRow>
+                  <TableHead className="text-xs md:text-sm">Description</TableHead>
+                  <TableHead className="text-xs md:text-sm">Amount</TableHead>
+                  <TableHead className="text-xs md:text-sm hidden md:table-cell">Date</TableHead>
+                  <TableHead className="text-xs md:text-sm">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {transactions.slice(0, 5).map(transaction => {
+                    // normalize type for reliable matching
+                    const type = (transaction.type || '').toLowerCase();
+                    const positiveTypes = ['credit', 'deposit'];
+                    const negativeTypes = ['debit', 'withdraw', 'withdrawal', 'transfer'];
+                    const sign = positiveTypes.includes(type) ? '+' : (negativeTypes.includes(type) ? '-' : (transaction.amount > 0 ? '+' : '-'));
+                    const colorClass = sign === '+' ? 'text-banking-blue' : 'text-banking-orange';
+                    return (
+                      <TableRow key={transaction.id}>
+                        <TableCell className="text-xs md:text-sm">{transaction.note}</TableCell>
+                        <TableCell className={`text-xs md:text-sm ${colorClass}`}>
+                        {sign}${Math.abs(transaction.amount).toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-xs md:text-sm hidden md:table-cell">{transaction.date}</TableCell>
+                        <TableCell>
+                        <Badge variant="secondary" className="text-xs">{transaction.status}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+                </Table>
+                </div>
+                )}
+              </CardContent>
               </Card>
 
               {/* Referral Widget */}
@@ -481,186 +508,201 @@ const Dashboard = () => {
                   
                   {/* Referral Program Card - Shows at bottom when Share Code is clicked */}
                   {showReferralCard && <div className="mt-6 p-4 bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/10 rounded-lg">
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="text-center p-3 bg-background rounded-lg">
-                          <p className="text-lg font-bold text-primary font-mono">REF-{userSession.accountNumber}</p>
-                          <p className="text-xs text-muted-foreground">Referral Code</p>
-                        </div>
-                        <div className="text-center p-3 bg-background rounded-lg">
-                          <p className="text-lg font-bold text-primary">3</p>
-                          <p className="text-xs text-muted-foreground">People Referred</p>
-                        </div>
-                        <div className="text-center p-3 bg-background rounded-lg">
-                          <p className="text-lg font-bold text-accent">$15,000</p>
-                          <p className="text-xs text-muted-foreground">Total Earnings</p>
-                        </div>
-                        <div className="flex items-center justify-center">
-                          <Button onClick={handleReferralCodeCopy} variant="outline" size="sm" className="w-full">
-                            {referralCodeCopied ? <>
-                                <Check className="w-4 h-4 mr-2" />
-                                Copied!
-                              </> : <>
-                                <Copy className="w-4 h-4 mr-2" />
-                                Copy Code
-                              </>}
-                          </Button>
-                        </div>
-                      </div>
-                      {referralCodeCopied && <div className="mt-3 text-center">
-                          <p className="text-sm text-primary font-medium">Referral code copied!</p>
-                        </div>}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="text-center p-3 bg-background rounded-lg">
+                      <p className="text-lg font-bold text-primary font-mono">REF-{userSession.accountNumber}</p>
+                      <p className="text-xs text-muted-foreground">Referral Code</p>
+                    </div>
+                    <div className="text-center p-3 bg-background rounded-lg">
+                      <p className="text-lg font-bold text-primary">3</p>
+                      <p className="text-xs text-muted-foreground">People Referred</p>
+                    </div>
+                    <div className="text-center p-3 bg-background rounded-lg">
+                      <p className="text-lg font-bold text-accent">$15,000</p>
+                      <p className="text-xs text-muted-foreground">Total Earnings</p>
+                    </div>
+                    <div className="flex items-center justify-center">
+                      <Button onClick={handleReferralCodeCopy} variant="outline" size="sm" className="w-full">
+                      {referralCodeCopied ? <>
+                        <Check className="w-4 h-4 mr-2" />
+                        Copied!
+                        </> : <>
+                        <Copy className="w-4 h-4 mr-2" />
+                        Copy Code
+                        </>}
+                      </Button>
+                    </div>
+                    </div>
+                    {referralCodeCopied && <div className="mt-3 text-center">
+                      <p className="text-sm text-primary font-medium">Referral code copied!</p>
                     </div>}
+                  </div>}
                 </CardContent>
               </Card>
             </div>}
 
           {activeTab === 'transactions' && <div className="space-y-4">
-              <h2 className="text-xl md:text-2xl font-bold">Transaction History</h2>
-              <Card>
-                <CardContent className="p-4 md:p-6">
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="text-xs md:text-sm">Date</TableHead>
-                          <TableHead className="text-xs md:text-sm">Description</TableHead>
-                          <TableHead className="text-xs md:text-sm hidden md:table-cell">Type</TableHead>
-                          <TableHead className="text-xs md:text-sm">Amount</TableHead>
-                          <TableHead className="text-xs md:text-sm">Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {mockTransactions.map(transaction => <TableRow key={transaction.id}>
-                            <TableCell className="text-xs md:text-sm">{transaction.date}</TableCell>
-                            <TableCell className="text-xs md:text-sm">{transaction.description}</TableCell>
-                            <TableCell className="hidden md:table-cell">
-                              <Badge variant={transaction.type === 'Credit' ? 'default' : 'secondary'} className="text-xs">
-                                {transaction.type}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className={`text-xs md:text-sm ${transaction.amount > 0 ? 'text-banking-blue' : 'text-banking-orange'}`}>
-                              {transaction.amount > 0 ? '+' : ''}${Math.abs(transaction.amount).toLocaleString()}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="secondary" className="text-xs">{transaction.status}</Badge>
-                            </TableCell>
-                          </TableRow>)}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>}
+            <h2 className="text-xl md:text-2xl font-bold">Transaction History</h2>
+            <Card>
+            {transactions.length === 0 ? (
+              <CardContent className="p-4 md:p-6">
+              <p className="text-sm text-muted-foreground">No transactions found</p>
+              </CardContent>
+            ) : (
+              <CardContent className="p-4 md:p-6">
+              <div className="overflow-x-auto">
+                <Table>
+                <TableHeader>
+                  <TableRow>
+                  <TableHead className="text-xs md:text-sm">Date</TableHead>
+                  <TableHead className="text-xs md:text-sm">Description</TableHead>
+                  <TableHead className="text-xs md:text-sm hidden md:table-cell">Type</TableHead>
+                  <TableHead className="text-xs md:text-sm">Amount</TableHead>
+                  <TableHead className="text-xs md:text-sm">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {transactions.map(transaction => {
+                    const type = (transaction.type || '').toLowerCase();
+                    const positiveTypes = ['credit', 'deposit'];
+                    const negativeTypes = ['debit', 'withdraw', 'withdrawal', 'transfer'];
+                    const sign = positiveTypes.includes(type) ? '+' : (negativeTypes.includes(type) ? '-' : (transaction.amount > 0 ? '+' : '-'));
+                    const colorClass = sign === '+' ? 'text-banking-blue' : 'text-banking-orange';
+                    return (
+                      <TableRow key={transaction.id}>
+                        <TableCell className="text-xs md:text-sm">{transaction.date}</TableCell>
+                        <TableCell className="text-xs md:text-sm">{transaction.note}</TableCell>
+                        <TableCell className="text-xs md:text-sm hidden md:table-cell">
+                          <Badge variant={transaction.type === 'Credit' ? 'default' : 'secondary'} className="text-xs">
+                          {transaction.type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className={`text-xs md:text-sm ${colorClass}`}>
+                          {sign}${Math.abs(transaction.amount).toLocaleString()} 
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="text-xs">{transaction.status}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })} 
+                </TableBody>
+                </Table>
+              </div>
+              </CardContent>
+            )}
+            </Card>
+          </div>}
 
           {activeTab === 'deposit' && <div className="space-y-4 md:space-y-6">
-              <div className="flex items-center space-x-2 mb-4">
-                <ArrowDownToLine className="h-5 w-5 md:h-6 md:w-6 text-banking-blue" />
-                <h2 className="text-xl md:text-2xl font-bold">Deposit Funds</h2>
-              </div>
-              
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base md:text-lg">Wire Transfer Information</CardTitle>
-                  <CardDescription className="text-xs md:text-sm">
-                    Use the details below to transfer funds to your account
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid gap-3">
-                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
-                      <div className="flex-1">
-                        <Label className="text-xs text-muted-foreground uppercase tracking-wide">Account Name</Label>
-                        <p className="font-semibold text-sm md:text-base">{userName}</p>
-                      </div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleCopy(bankDetails.accountName, 'name')}>
-                        {copied === 'name' ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
-                      <div className="flex-1">
-                        <Label className="text-xs text-muted-foreground uppercase tracking-wide">Account Number</Label>
-                        <p className="font-semibold text-sm md:text-base font-mono">{accountNumber}</p>
-                      </div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleCopy(bankDetails.accountNumber, 'account')}>
-                        {copied === 'account' ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
-                      <div className="flex-1">
-                        <Label className="text-xs text-muted-foreground uppercase tracking-wide">Bank Name</Label>
-                        <p className="font-semibold text-sm md:text-base">{bankDetails.bankName}</p>
-                      </div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleCopy(bankDetails.bankName, 'bank')}>
-                        {copied === 'bank' ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
-                      <div className="flex-1">
-                        <Label className="text-xs text-muted-foreground uppercase tracking-wide">Routing Number</Label>
-                        <p className="font-semibold text-sm md:text-base font-mono">{bankDetails.routingNumber}</p>
-                      </div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleCopy(bankDetails.routingNumber, 'routing')}>
-                        {copied === 'routing' ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
-                      <div className="flex-1">
-                        <Label className="text-xs text-muted-foreground uppercase tracking-wide">SWIFT Code</Label>
-                        <p className="font-semibold text-sm md:text-base font-mono">FANBUS33</p>
-                      </div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleCopy('FANBUS33', 'swift')}>
-                        {copied === 'swift' ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                    
-                    <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
-                      <Label className="text-xs text-muted-foreground uppercase tracking-wide">Reference Note</Label>
-                      <p className="font-semibold text-sm md:text-base text-primary">
-                        Deposit to Account: {accountNumber}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Include this reference in your transfer
-                      </p>
-                    </div>
+            <div className="flex items-center space-x-2 mb-4">
+            <ArrowDownToLine className="h-5 w-5 md:h-6 md:w-6 text-banking-blue" />
+            <h2 className="text-xl md:text-2xl font-bold">Deposit Funds</h2>
+            </div>
+                        
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base md:text-lg">Wire Transfer Information</CardTitle>
+                <CardDescription className="text-xs md:text-sm">
+                Use the details below to transfer funds to your account
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-3">
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
+                  <div className="flex-1">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Account Name</Label>
+                  <p className="font-semibold text-sm md:text-base">{userName}</p>
                   </div>
-                  
-                  <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
-                    <div className="flex items-start space-x-2">
-                      <div className="w-4 h-4 rounded-full bg-amber-500 mt-0.5 shrink-0"></div>
-                      <div>
-                        <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Important Instructions</p>
-                        <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                          Transfer funds to the account above and click "I've Sent It" to notify us. 
-                          Processing typically takes 1-3 business days.
-                        </p>
-                      </div>
-                    </div>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleCopy(bankDetails.accountName, 'name')}>
+                  {copied === 'name' ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
+                  <div className="flex-1">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Account Number</Label>
+                  <p className="font-semibold text-sm md:text-base font-mono">{accountNumber}</p>
                   </div>
-                  
-                  {/* <Button className="w-full mt-4" size="lg">
-                    I've Sent It
-                  </Button> */}
-                </CardContent>
-              </Card>
-            </div>}
+                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleCopy(bankDetails.accountNumber, 'account')}>
+                  {copied === 'account' ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
+                  <div className="flex-1">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Bank Name</Label>
+                  <p className="font-semibold text-sm md:text-base">{bankDetails.bankName}</p>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleCopy(bankDetails.bankName, 'bank')}>
+                  {copied === 'bank' ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
+                  <div className="flex-1">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Routing Number</Label>
+                  <p className="font-semibold text-sm md:text-base font-mono">{bankDetails.routingNumber}</p>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleCopy(bankDetails.routingNumber, 'routing')}>
+                  {copied === 'routing' ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
+                  <div className="flex-1">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">SWIFT Code</Label>
+                  <p className="font-semibold text-sm md:text-base font-mono">FANBUS33</p>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleCopy('FANBUS33', 'swift')}>
+                  {copied === 'swift' ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                
+                <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Reference Note</Label>
+                  <p className="font-semibold text-sm md:text-base text-primary">
+                  Deposit to Account: {accountNumber}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                  Include this reference in your transfer
+                  </p>
+                </div>
+                </div>
+                
+                <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                <div className="flex items-start space-x-2">
+                  <div className="w-4 h-4 rounded-full bg-amber-500 mt-0.5 shrink-0"></div>
+                  <div>
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Important Instructions</p>
+                  <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                    Transfer funds to the account above and click "I've Sent It" to notify us. 
+                    Processing typically takes 1-3 business days.
+                  </p>
+                  </div>
+                </div>
+                </div>
+                
+                {/* <Button className="w-full mt-4" size="lg">
+                I've Sent It
+                </Button> */}
+              </CardContent>
+            </Card>
+          </div>}
 
           {activeTab === 'withdraw' && <div className="space-y-4">
-              <h2 className="text-xl md:text-2xl font-bold">Withdraw Funds</h2>
-              <Card>
-                <CardContent className="p-6">
-                  <p className="text-muted-foreground">
-                    Use the mobile withdraw option or visit our dedicated withdraw page for a better experience.
-                  </p>
-                  <Button onClick={() => navigate('/withdraw')} className="mt-4">
-                    Go to Withdraw Page
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>}
+            <h2 className="text-xl md:text-2xl font-bold">Withdraw Funds</h2>
+            <Card>
+              <CardContent className="p-6">
+                <p className="text-muted-foreground">
+                  Use the mobile withdraw option or visit our dedicated withdraw page for a better experience.
+                </p>
+                <Button onClick={() => navigate('/withdraw')} className="mt-4">
+                  Go to Withdraw Page
+                </Button>
+              </CardContent>
+            </Card>
+          </div>}
 
           {activeTab === 'profile' && <ProfileSection userSession={userSession} />}
 
@@ -692,7 +734,7 @@ const Dashboard = () => {
               <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                 <div>
                   <Label className="text-xs text-muted-foreground">Account Name</Label>
-                  <p className="font-medium">{bankDetails.accountName}</p>
+                  <p className="font-medium">{userName}</p> 
                 </div>
                 <Button variant="ghost" size="icon" onClick={() => handleCopy(bankDetails.accountName, 'name')}>
                   {copied === 'name' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
@@ -783,6 +825,7 @@ const Dashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>;
-};
+    </div>
+  );
+}
 export default Dashboard;

@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Lock, Eye, EyeOff } from 'lucide-react';
 import supabase from '@/lib/supabaseClient';
+import {sendOtp} from '../lib/sendOtp'
+import { verifyOtp } from '../lib/verifyOtp';
 import Header from '@/components/Header';
 import { useToast } from '@/hooks/use-toast';
 
@@ -40,6 +42,10 @@ const Login = () => {
       return;
     }
 
+    document.getElementById('login-button').disabled = true;
+
+    document.getElementById('login-button').innerText = 'Logging in...';
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -50,8 +56,13 @@ const Login = () => {
     if(user) {
       // User is logged in
       setUser(user);
-      localStorage.setItem('userSession', JSON.stringify(user));
-      toast({ description: 'Login successful!', duration: 4000 });
+      // Send OTP for verification
+      const otpResponse = await sendOtp(email);
+      if (!otpResponse.success) {
+        toast({ description: 'Failed to send OTP. Please try again.', duration: 4000 });
+        return;
+      }
+      setOtpValue('');
       setShowLoginOtp(true);
     } else {
       const errorMsg = error?.message || "Unknown error occurred";
@@ -82,17 +93,40 @@ const Login = () => {
     // setShowLoginOtp(true);
   };
 
-  const handleOtpSubmit = () => {
-    // Mock successful OTP verification and login
-    const mockUserSession = {
-      fullName: 'John Doe',
-      email: formData.emailOrPhone,
-      accountNumber: '3032410090',
-      balance: 15724.25
-    };
-    localStorage.setItem('userSession', JSON.stringify(mockUserSession));
-    setShowLoginOtp(false);
-    navigate('/dashboard');
+  const handleOtpSubmit = async () => {
+    if (!otpValue || otpValue.length !== 6) {
+      toast({ description: 'Please enter a valid 6-digit OTP', duration: 4000 });
+      return;
+    }
+
+    if(!user) {
+      toast({ description: 'User not found. Please login again.', duration: 4000 });
+      setShowLoginOtp(false);
+      return;
+    }
+
+    try {
+      const verificationResponse = await verifyOtp(user.email, otpValue);
+
+      if (!verificationResponse.success) {
+        toast({ description: 'Invalid OTP. Please try again.', duration: 4000 });
+        return;
+      }
+
+      localStorage.setItem('userSession', JSON.stringify(user));
+      setUser(user);
+
+
+      // OTP is valid, proceed to dashboard
+      toast({ description: 'Login successful! Redirecting to dashboard...', duration: 4000 });
+      setShowLoginOtp(false);
+      
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 200);
+    } catch (error) {
+      toast({ description: 'OTP verification failed. Please try again.', duration: 4000 });
+    }
   };
 
   return (
@@ -152,7 +186,7 @@ const Login = () => {
                   <span>Your connection is encrypted and secure</span>
                 </div>
 
-                <Button type="submit" variant="hero" className="w-full" size="lg">
+                <Button type="submit" variant="hero" className="w-full" size="lg" id="login-button">
                   Log In Securely
                 </Button>
               </form>

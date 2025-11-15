@@ -1,48 +1,100 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { User, Save, Check } from 'lucide-react';
+import supabase from '@/lib/supabaseClient';
 
-interface ProfileSectionProps {
-  userSession: {
-    fullName: string;
-    email: string;
-    accountNumber: string;
-    balance: number;
-  };
-}
-
-const ProfileSection = ({ userSession }: ProfileSectionProps) => {
+const ProfileSection = ({ userSession }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [profileData, setProfileData] = useState({
-    fullName: userSession.fullName,
-    email: userSession.email,
-    phone: '+234 (0) 812 345 6789',
-    address: '123 Banking Street, Lagos, Nigeria',
-    dateOfBirth: '1990-01-01',
-    occupation: 'Software Engineer'
+    fullName: "",
+    email: "",
+    phone: "",
+    address: "",
+    dateOfBirth: "",
+    occupation: ""
   });
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
 
-  const handleInputChange = (field: string, value: string) => {
+  useEffect(() => {
+    if (!userSession?.id) return;
+    let mounted = true;
+
+    (async () => {
+      setIsLoadingProfile(true);
+      const { data, error } = await supabase
+        .from('accounts')
+        .select('full_name, email, phone, address, date_of_birth, occupation')
+        .eq('id', userSession.id)
+        .single();
+
+      setIsLoadingProfile(false);
+
+      if (error) {
+        toast({
+          title: 'Failed to load profile',
+          description: error.message || 'Unable to fetch profile from server.'
+        });
+        return;
+      }
+
+      if (!mounted || !data) return;
+
+      setProfileData({
+        fullName: data.full_name || "",
+        email: data.email || "",
+        phone: data.phone || "",
+        address: data.address || "",
+        dateOfBirth: data.date_of_birth || "",
+        occupation: data.occupation || ""
+      });
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [userSession?.id]);
+
+  const handleInputChange = (field, value) => {
     setProfileData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSave = async () => {
     setIsSaving(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Update localStorage with new full name
-    const session = JSON.parse(localStorage.getItem('userSession') || '{}');
-    session.fullName = profileData.fullName;
-    session.email = profileData.email;
-    localStorage.setItem('userSession', JSON.stringify(session));
-    
+    // Update supabase with new full name
+    const {data, error } = await supabase
+      .from('accounts')
+      .update({
+        full_name: profileData.fullName,
+        email: profileData.email,
+        phone: profileData.phone,
+        address: profileData.address,
+        date_of_birth: profileData.dateOfBirth,
+        occupation: profileData.occupation
+      })
+      .eq('id', userSession.id);
+
+      if (data) {
+        toast({
+          title: "Profile Updated",
+          description: "Your profile information has been successfully saved.",
+        });
+      }
+
+    if (error) {
+      toast({
+        title: "Error Updating Profile",
+        description: "There was an error updating your profile information.",
+      });
+      setIsSaving(false);
+      return;
+    }
+
     setIsSaving(false);
     setIsEditing(false);
     
@@ -175,12 +227,12 @@ const ProfileSection = ({ userSession }: ProfileSectionProps) => {
                 onClick={() => {
                   setIsEditing(false);
                   setProfileData({
-                    fullName: userSession.fullName,
-                    email: userSession.email,
-                    phone: '+234 (0) 812 345 6789',
-                    address: '123 Banking Street, Lagos, Nigeria',
-                    dateOfBirth: '1990-01-01',
-                    occupation: 'Software Engineer'
+                    fullName: userSession.fullName || "",
+                    email: userSession.email || "",
+                    phone: userSession.phone || "",
+                    address: userSession.address || "",
+                    dateOfBirth: userSession.dateOfBirth || "",
+                    occupation: userSession.occupation || ""
                   });
                 }}
                 disabled={isSaving}

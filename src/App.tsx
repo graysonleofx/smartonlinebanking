@@ -9,7 +9,7 @@ import Login from "./pages/Login.jsx";
 import ContactUs from "./pages/contact.jsx";
 import AboutUs from "./pages/about-us.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
-import Transfer from "./pages/Transfer";
+import Transfer from "./pages/Transfer.jsx";
 import Withdraw from "./pages/Withdraw.jsx";
 import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/AdminLogin";

@@ -11,6 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import TransactionProgress from '@/components/TransactionProgress';
 import TransactionReceipt from '@/components/TransactionReceipt';
 import { ArrowLeft, Send } from 'lucide-react';
+import  supabase from '@/lib/supabaseClient';
+import { sendOtp } from '../lib/sendOtp';
+import { verifyOtp } from '../lib/verifyOtp';
 
 const Transfer = () => {
   const navigate = useNavigate();
@@ -18,8 +21,9 @@ const Transfer = () => {
   const [showProgress, setShowProgress] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [otpValue, setOtpValue] = useState('');
-  const [userSession, setUserSession] = useState<any>(null);
+  const [userSession, setUserSession] = useState(null);
   const [selectedAccount, setSelectedAccount] = useState('');
+  const [receiptData, setReceiptData] = useState(null);
   const [formData, setFormData] = useState({
     accountName: '',
     accountNumber: '',
@@ -30,24 +34,201 @@ const Transfer = () => {
     note: '',
     fromAccount: ''
   });
+  const [balance, setBalance] = useState({ checking: null, savings: null });
 
   useEffect(() => {
     const session = localStorage.getItem('userSession');
     if (session) {
       setUserSession(JSON.parse(session));
     }
+
+    const fetchBalances = async () => {
+      if (session) {
+        const user = JSON.parse(session);
+        const { data, error } = await supabase 
+        .from('accounts')
+        .select('checking_account_balance, savings_account_balance')
+        .eq('email', user?.email)
+        // .single()
+
+        // console.log(data)
+
+        if(data && data.length > 0) {
+          setBalance({
+            checking: data[0].checking_account_balance,
+            savings: data[0].savings_account_balance
+          });
+        } else {
+          setBalance({ checking: 0, savings: 0 });
+        }
+        if (error) {
+          console.error('Error fetching balances:', error);
+        }
+    }
+  };
+
+  fetchBalances();
   }, []);
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setShowOtpModal(true);
-  };
+    if (!selectedAccount) return;
+    if (parseFloat(formData.amount) <= 0) return;
 
-  const handleOtpSubmit = () => {
+    // Show loading state
+
+    // Validate balance
+    const amount = parseFloat(formData.amount);
+    if (
+      (selectedAccount === 'checking' && amount > balance.checking) ||
+      (selectedAccount === 'savings' && amount > balance.savings)
+    ) {
+      alert('Insufficient funds in the selected account.');
+      document.getElementById('amount').style.borderColor = 'red';
+      document.getElementById('amount').style.borderWidth = '2px';
+      setShowOtpModal(false);
+      setShowProgress(false);
+      setShowReceipt(false);
+      return;
+    } else if (amount < 10) {
+      alert('Minimum transfer amount is $10.');
+      document.getElementById('amount').style.borderColor = 'red';
+      document.getElementById('amount').style.borderWidth = '2px';
+      setShowOtpModal(false);
+      setShowProgress(false);
+      setShowReceipt(false);
+      return;
+    } else {
+      document.getElementById('proceedTransferBtn').disabled = true;
+      document.getElementById('proceedTransferBtn').textContent = 'Please wait...';
+      document.getElementById('amount').style.borderColor = '';
+      document.getElementById('amount').style.borderWidth = '';
+
+      // Send OTP and show modal
+      try {
+        const sendRes = await sendOtp(userSession.email);
+        console.log('OTP sent:', sendRes);
+       
+        if (!sendRes.success) {
+          alert(sendRes.message || 'Failed to send OTP. Please try again.');
+          return
+        }
+
+        setOtpValue('');
+        setShowOtpModal(true);
+      } catch (error) {
+        console.error('Error sending OTP:', error);
+        alert('Failed to send OTP. Please try again.');
+      }
+
+      setOtpValue('');
+      setShowOtpModal(true);
+    }
+
+  }
+
+  const handleOtpSubmit = async () => {
+   if (otpValue.length !== 6) {
+      alert('Please enter a valid 6-digit OTP.');
+      return;
+    }
+
+    if (!userSession?.email) {
+      alert('User session not found. Please login again.');
+      return;
+    }
+
+    try {
+      const verifyRes = await verifyOtp(userSession.email, otpValue);
+
+      if (!verifyRes.success) {
+        alert(verifyRes.message || 'OTP verification failed. Please try again.');
+        return;
+      }
+
+      const amount = parseFloat(formData.amount);
+
+      // insert transaction and update balance
+      const { error: transactionError } = await supabase
+        .from('transactions')
+        .insert([{
+          email: userSession.email,
+          account_name: formData.accountName,
+          account_number: formData.accountNumber?.trim(),
+          routing_number: formData.routingNumber?.trim(),
+          swift_code: formData.swiftCode?.trim(),
+          bank_name: formData.bankName,
+          amount: amount,
+          note: formData.note,
+          from_account: selectedAccount,
+          type: 'Transfer',
+          status: 'completed',
+          created_at: new Date().toISOString(),
+          date: new Date().toLocaleDateString(),
+        }]);
+
+      if (transactionError) throw transactionError;
+      
+      // Update account balance
+      const newBalance = { 
+        ...balance, 
+        [selectedAccount]: balance[selectedAccount] - amount
+      };
+
+      const email = userSession.email.trim().toLowerCase();
+
+      const {data: updateData, error: updateError } = await supabase
+        .from('accounts')
+        .update({
+          checking_account_balance: newBalance.checking,
+          savings_account_balance: newBalance.savings
+        }, { returning: 'representation' })
+        .eq('email', email);
+
+      if (updateError) throw updateError;
+
+      setBalance(newBalance);
+
+      setReceiptData({
+        accountName: formData.accountName,
+        accountNumber: formData.accountNumber,
+        bankName: formData.bankName,
+        routingNumber: formData.routingNumber,
+        swiftCode: formData.swiftCode,
+        amount: amount,
+        note: formData.note,
+        fromAccount: selectedAccount
+      });
+
+      setFormData({
+        accountName: '',
+        accountNumber: '',
+        routingNumber: '',
+        swiftCode: '',
+        bankName: '',
+        amount: '',
+        note: '',
+        fromAccount: ''
+      });
+
+      setSelectedAccount('');
+
+      proceedToProgress();
+      setTimeout(() => {
+        setShowOtpModal(false);
+        setShowProgress(true);
+      }, 3000);
+    } catch (error) {
+      console.error('Error processing transfer:', error);
+      alert('Failed to process transfer. Please try again.');
+    }
+  }
+
+  const proceedToProgress = () => {
     setShowOtpModal(false);
     setShowProgress(true);
   };
@@ -77,10 +258,10 @@ const Transfer = () => {
         {showProgress ? (
           <TransactionProgress type="transfer" onComplete={handleProgressComplete} />
         ) : showReceipt ? (
-          <TransactionReceipt 
-            type="transfer" 
-            formData={formData} 
-            onClose={handleReceiptClose} 
+           <TransactionReceipt 
+            type="withdrawal" 
+            formData={receiptData} 
+            onClose={handleReceiptClose}
           />
         ) : (
           <Card>
@@ -157,17 +338,17 @@ const Transfer = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="checking">
-                        Checking Account - ₦{userSession?.checkingBalance?.toLocaleString() || '0'}
+                        Checking Account - ${balance?.checking?.toLocaleString() || '0'}
                       </SelectItem>
                       <SelectItem value="savings">
-                        Savings Account - ₦{userSession?.savingsBalance?.toLocaleString() || '0'}
+                        Savings Account - ${balance?.savings?.toLocaleString() || '0'}
                       </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div>
-                  <Label htmlFor="amount">Amount (₦)</Label>
+                  <Label htmlFor="amount">Amount ($)</Label>
                   <Input
                     id="amount"
                     type="number"
@@ -177,10 +358,10 @@ const Transfer = () => {
                     required
                   />
                   {selectedAccount && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Available: ₦{selectedAccount === 'checking' 
-                        ? userSession?.checkingBalance?.toLocaleString() 
-                        : userSession?.savingsBalance?.toLocaleString()}
+                    <p className="text-xs text-muted-foreground mt-1  selected-acc-bal">
+                      Available: ${selectedAccount === 'checking' 
+                        ? balance?.checking?.toLocaleString() 
+                        : balance?.savings?.toLocaleString()}
                     </p>
                   )}
                 </div>
@@ -197,8 +378,8 @@ const Transfer = () => {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full" disabled={!selectedAccount}>
-                Continue Transfer
+              <Button type="submit" className="w-full" disabled={!selectedAccount} id="proceedTransferBtn">
+                Proceed to Transfer
               </Button>
             </form>
           </CardContent>

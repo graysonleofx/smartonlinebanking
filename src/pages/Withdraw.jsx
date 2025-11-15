@@ -16,201 +16,227 @@ import { sendOtp } from '../lib/sendOtp';
 import { verifyOtp } from '../lib/verifyOtp';
 
 const Withdraw = () => {
-const navigate = useNavigate();
-const [showOtpModal, setShowOtpModal] = useState(false);
-const [showProgress, setShowProgress] = useState(false);
-const [showReceipt, setShowReceipt] = useState(false);
-const [otpValue, setOtpValue] = useState('');
-const [userSession, setUserSession] = useState(null);
-const [selectedAccount, setSelectedAccount] = useState('');
-const [formData, setFormData] = useState({
-  accountName: '',
-  accountNumber: '',
-  routingNumber: '',
-  swiftCode: '',
-  amount: '',
-  bankName: '',
-  note: '',
-  fromAccount: ''
-});
-const [balance, setBalance] = useState({ checking: null, savings: null });
+  const navigate = useNavigate();
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [showProgress, setShowProgress] = useState(false);
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [otpValue, setOtpValue] = useState('');
+  const [userSession, setUserSession] = useState(null);
+  const [selectedAccount, setSelectedAccount] = useState('');
+  const [receiptData, setReceiptData] = useState(null);
+  const [formData, setFormData] = useState({
+    accountName: '',
+    accountNumber: '',
+    routingNumber: '',
+    swiftCode: '',
+    amount: '',
+    bankName: '',
+    note: '',
+    fromAccount: ''
+  });
+  const [balance, setBalance] = useState({ checking: null, savings: null });
 
-useEffect(() => {
-  const session = localStorage.getItem('userSession');
-  if (session) {
-    setUserSession(JSON.parse(session));
-  }
-
-  const fetchBalances = async () => {
+  useEffect(() => {
+    const session = localStorage.getItem('userSession');
     if (session) {
-      const user = JSON.parse(session);
-      const { data, error } = await supabase 
-        .from('accounts')
-        .select('checking_account_balance, savings_account_balance')
-        .eq('email', user?.email)
-        // .single()
-
-        // console.log(data);
-
-        if(data && data.length > 0) {
-          setBalance({
-            checking: data[0].checking_account_balance,
-            savings: data[0].savings_account_balance
-          });
-        } else {
-          setBalance({ checking: 0, savings: 0 });
-        }
-        if (error) {
-          console.error('Error fetching balances:', error);
-        }
+      setUserSession(JSON.parse(session));
     }
+
+    const fetchBalances = async () => {
+      if (session) {
+        const user = JSON.parse(session);
+        const { data, error } = await supabase 
+          .from('accounts')
+          .select('checking_account_balance, savings_account_balance')
+          .eq('email', user?.email)
+          // .single()
+
+          // console.log(data);
+
+          if(data && data.length > 0) {
+            setBalance({
+              checking: data[0].checking_account_balance,
+              savings: data[0].savings_account_balance
+            });
+          } else {
+            setBalance({ checking: 0, savings: 0 });
+          }
+          if (error) {
+            console.error('Error fetching balances:', error);
+          }
+      }
+    };
+
+    fetchBalances();
+  }, []);
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  fetchBalances();
-}, []);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedAccount) return;
+    if (parseFloat(formData.amount) <= 0) return;
 
-const handleInputChange = (field, value) => {
-  setFormData(prev => ({ ...prev, [field]: value }));
+    // Validate balance
+    const amount = parseFloat(formData.amount);
+    if (
+      (selectedAccount === 'checking' && amount > balance.checking) ||
+      (selectedAccount === 'savings' && amount > balance.savings)
+    ) {
+      alert('Insufficient funds.');
+      document.getElementById('amount').style.borderColor = 'red';
+      document.getElementById('amount').style.borderWidth = '2px';
+      setShowOtpModal(false);
+      setShowProgress(false);
+      setShowReceipt(false);
+      return;
+    } else if( amount < 10 ) {
+      alert('Minimum withdrawal is $10.');
+      document.getElementById('amount').style.borderColor = 'red';
+      document.getElementById('amount').style.borderWidth = '2px';
+      setShowOtpModal(false);
+      setShowProgress(false);
+      setShowReceipt(false);
+      return;
+    }else {
+      document.getElementById('proceedWithdrawBtn').disabled = true;
+      document.getElementById('proceedWithdrawBtn').textContent = 'Please wait...';
+      document.getElementById('amount').style.borderColor = '';
+      document.getElementById('amount').style.borderWidth = '';
+      // Valid submission
+      console.log('Withdrawal Data:', { ...formData, fromAccount: selectedAccount, amount });
 
-  // if (field === 'amount') {
-  //   const numericValue = parseFloat(value);
-  //   if (selectedAccount === 'checking' && numericValue > balance.checking) {
-  //     document.getElementById('amount').style.borderColor = 'red';
-  //     document.getElementById('amount').style.borderWidth = '2px';
+      try {
+        const sendRes = await sendOtp(userSession?.email);
+        console.log('sendOtp response:', sendRes);
 
-  //   } else if (selectedAccount === 'savings' && numericValue > balance.savings) {
-  //     setFormData(prev => ({ ...prev, amount: balance.savings.toString() }));
-  //   }
-  // }
-};
-
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (!selectedAccount) return;
-  if (parseFloat(formData.amount) <= 0) return;
-
-  // Validate balance
-  const amount = parseFloat(formData.amount);
-  if (
-    (selectedAccount === 'checking' && amount > balance.checking) ||
-    (selectedAccount === 'savings' && amount > balance.savings)
-  ) {
-    alert('Insufficient funds.');
-    document.getElementById('amount').style.borderColor = 'red';
-    document.getElementById('amount').style.borderWidth = '2px';
-    setShowOtpModal(false);
-    setShowProgress(false);
-    setShowReceipt(false);
-    return;
-  } else if( amount < 1 ) {
-    alert('Minimum withdrawal is $1.');
-    document.getElementById('amount').style.borderColor = 'red';
-    document.getElementById('amount').style.borderWidth = '2px';
-    setShowOtpModal(false);
-    setShowProgress(false);
-    setShowReceipt(false);
-    return;
-  } else {
-    document.getElementById('amount').style.borderColor = '';
-    document.getElementById('amount').style.borderWidth = '';
-    // Valid submission
-    console.log('Withdrawal Data:', { ...formData, fromAccount: selectedAccount, amount });
-
-    // Save withdrawal request to DB 
-    try {
-      const { error } = await supabase.from('withdrawals').insert([
-        {
-          id: userSession?.id,
-          email: userSession?.email,
-          account_name: formData.accountName,
-          account_number: Number(formData.accountNumber),
-          bank_name: formData.bankName,
-          routing_number: formData.routingNumber,
-          swift_code: formData.swiftCode,
-          amount: amount,
-          note: formData.note,
-          from_account: Number(selectedAccount),
-          status: 'pending',
-          created_at: new Date().toISOString()
+        if (!sendRes.success) {
+          alert(sendRes.message);
+          return;
         }
-      ]);
-      if (error) {
-        alert('Error submitting withdrawal.');
-        console.error('Error inserting withdrawal:', error.message);
-        return;
+
+        // alert('OTP sent! Please check your email.');
+        setOtpValue('');
+        setShowOtpModal(true);
+      } catch (err) {
+        console.error('Error sending OTP:', err);
+        alert('Failed to send OTP. Please try again.');
       }
-    } catch (err) {
-      alert('Error submitting withdrawal.');
-      console.error('Error submitting withdrawal:', err.message);
-      return;
-    }
 
-    // Reset form
-    setFormData({
-      accountName: '',
-      accountNumber: '',
-      bankName: '',
-      routingNumber: '',
-      swiftCode: '',
-      amount: '',
-      note: '',
-      fromAccount: ''
-    });
-    setSelectedAccount('');
-
-    // try {
-    //   // Generate a 6-digit OTP
-    //   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    //   const userEmail = userSession?.email;
-    //   console.log('Generated OTP:', otp);
-
-    //   // Send OTP to user email
-    //   await sendOtp(userEmail, otp);
-
-    // } catch (err) {
-    //   console.error('Error sending otp email:', err.message);
-    //   alert('Error sending OTP email. Please try again.');
-    //   return;
-    // }
-
-      // Show OTP modal
-
-    try {
-      await sendOtp(userSession?.email);  // ✅ backend handles OTP generation
-    } catch (err) {
-      console.error('Error sending OTP email:', err.message);
-      alert('Error sending OTP email. Please try again.');
-      return;
-    }
 
       setOtpValue('');
       setShowOtpModal(true);
 
     }
-
-
   };
 
-  const handleOtpSubmit = () => {
+  // Verify OTP and process withdrawal
+  const handleOtpSubmit = async () => {
     if (otpValue.length !== 6) {
       alert('Please enter a valid 6-digit OTP.');
       return;
     }
-    // Verify OTP
-    verifyOtp(userSession?.email, otpValue)
-      .then((res) => {
-        if (res.success) {
-          // OTP verified
-          proceedToProgress();
-        } else {
-          alert(res.message || 'Invalid OTP. Please try again.');
-        }
-      })
-      .catch((err) => {
-        console.error('Error verifying OTP:', err.message);
-        alert('Error verifying OTP. Please try again.');
+    if (!userSession?.email) {
+      alert('User session not found. Please login again.');
+      return;
+    }
+
+    try {
+      const res = await verifyOtp(userSession.email, otpValue);
+
+      if (!res.success) {
+        alert(res.message || 'Invalid OTP. Please try again.');
+        return;
+      }
+
+      const amount = parseFloat(formData.amount);
+
+      // 1️⃣ Insert withdrawal
+      const { error: withdrawalError } = await supabase
+        .from('transactions')
+        .insert([{
+          // id: userSession.id,
+          email: userSession.email,
+          account_name: formData.accountName,
+          account_number: formData.accountNumber?.trim(),
+          bank_name: formData.bankName,
+          routing_number: formData.routingNumber?.trim(),
+          swift_code: formData.swiftCode?.trim(),
+          amount,
+          note: formData.note || null,
+          from_account: selectedAccount,
+          status: 'completed',
+          created_at: new Date().toISOString(),
+          date: new Date().toLocaleDateString(),
+          type: 'Withdraw'
+        }]);
+
+      if (withdrawalError) throw withdrawalError;
+
+      // 2️⃣ Compute updated balance
+      const updatedBalance = {
+        ...balance,
+        [selectedAccount]: balance[selectedAccount] - amount
+      };
+
+      // 3️⃣ Persist to Supabase
+      const email = userSession.email.trim().toLowerCase();
+      const { data: updatedData, error: balanceError } = await supabase
+        .from('accounts')
+        .update(
+          {
+            checking_account_balance: updatedBalance.checking,
+            savings_account_balance: updatedBalance.savings
+          },
+          { returning: 'representation' } // ensures updated row is returned
+        )
+        .eq('email', email);
+
+      if (balanceError) throw balanceError;
+
+      console.log('Balance updated in Supabase:', updatedData);
+
+      // 4️⃣ Update local state
+      setBalance(updatedBalance);
+
+      // 5️⃣ Prepare receipt & reset form
+      setReceiptData({
+        accountName: formData.accountName,
+        accountNumber: formData.accountNumber,
+        bankName: formData.bankName,
+        routingNumber: formData.routingNumber,
+        swiftCode: formData.swiftCode,
+        amount,
+        note: formData.note,
+        fromAccount: selectedAccount
       });
+
+      setFormData({
+        accountName: '',
+        accountNumber: '',
+        bankName: '',
+        routingNumber: '',
+        swiftCode: '',
+        amount: '',
+        note: '',
+        fromAccount: ''
+      });
+      setSelectedAccount('');
+
+      proceedToProgress();
+      setTimeout(() => {
+        setShowProgress(false);
+        setShowReceipt(true);
+      }, 3000);
+
+    } catch (err) {
+      console.error('Error in withdrawal:', err);
+      alert('Error verifying OTP or updating balance. Please try again.');
+    }
   };
+
 
   const proceedToProgress = () => {
     setShowOtpModal(false);
@@ -244,8 +270,8 @@ const handleSubmit = async (e) => {
         ) : showReceipt ? (
           <TransactionReceipt 
             type="withdrawal" 
-            formData={formData} 
-            onClose={handleReceiptClose} 
+            formData={receiptData} 
+            onClose={handleReceiptClose}
           />
         ) : (
           <Card>
@@ -321,11 +347,18 @@ const handleSubmit = async (e) => {
                       <SelectValue placeholder="Select account" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="checking">
+                      {/* <SelectItem value="checking">
                         Checking Account - ${balance?.checking || '0'}
                       </SelectItem>
                       <SelectItem value="savings">
                         Savings Account - ${balance?.savings || '0'}
+                      </SelectItem> */}
+
+                      <SelectItem value="checking">
+                        Checking Account - ${balance?.checking?.toLocaleString() || '0'}
+                      </SelectItem>
+                      <SelectItem value="savings">
+                        Savings Account - ${balance?.savings?.toLocaleString() || '0'}
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -362,8 +395,8 @@ const handleSubmit = async (e) => {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full" disabled={!selectedAccount}>
-                Continue Withdrawal
+              <Button type="submit" className="w-full mt-2" id="proceedWithdrawBtn">
+                Proceed to Withdraw
               </Button>
             </form>
           </CardContent>

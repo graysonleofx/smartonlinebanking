@@ -38,10 +38,10 @@ const Hero = () => {
                 Get Started
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-              <Button variant="outline-white" size="lg" className="text-lg px-8 py-6" onClick={handleWatchDemo}>
+              {/* <Button variant="outline-white" size="lg" className="text-lg px-8 py-6" onClick={handleWatchDemo}>
                 <Play className="mr-2 h-5 w-5" />
                 Watch Demo
-              </Button>
+              </Button> */}
             </div>
 
             {/* Stats */}
