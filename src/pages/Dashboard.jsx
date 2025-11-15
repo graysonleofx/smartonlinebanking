@@ -289,7 +289,7 @@ const Dashboard = () => {
     action: () => navigate('/withdraw')
   }, {
       id: 'transactions',
-      label: 'Transactions',
+      label: 'History',
       icon: CreditCard,
       action: () => setActiveTab('transactions')
     } , {
