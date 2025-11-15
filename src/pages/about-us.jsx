@@ -1,11 +1,7 @@
-// > Create a professional AboutUs React component for a digital banking web app. Use Tailwind CSS for styling. The page should include:
-// > - A hero section with a headline, subheadline, and background image placeholder.
-// > - A brief company history section with placeholder text.
-// > - A section highlighting core values or mission with 3–4 cards (e.g. Security, Innovation, Transparency, Customer Focus).
-// > - A section with 2–3 team member profile cards (name, title, placeholder image).
-// > - Responsive layout for mobile and desktop
-import React from 'react';
 import Header from '../components/Header';
+import CTO from '../assets/CTO.jpg';
+import MarketingHead from '../assets/HOM.jpg';
+import SupportManager from '../assets/CS.jpg';
 
 const coreValues = [
   {
@@ -51,23 +47,23 @@ const coreValues = [
 ];
 
 const team = [
-  { name: 'John Doe', title: 'Chief Technology Officer', img: 'https://via.placeholder.com/256', alt: 'John Doe portrait' },
-  { name: 'Jane Smith', title: 'Head of Marketing', img: 'https://via.placeholder.com/256', alt: 'Jane Smith portrait' },
-  { name: 'Alice Johnson', title: 'Customer Support Manager', img: 'https://via.placeholder.com/256', alt: 'Alice Johnson portrait' }
+  { name: 'Jeff T. Ruiz', title: 'Chief Technology Officer', img: CTO, alt: 'Jeff T. Ruiz portrait' },
+  { name: 'Alexandria H. Chandler', title: 'Head of Marketing', img: MarketingHead, alt: 'Alexandria H. Chandler portrait' },
+  { name: 'Kendall C. Marty', title: 'Customer Support Manager', img: SupportManager, alt: 'Kendall C. Marty portrait' }
 ];
 
 const AboutUs = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
+    <div className="min-h-screen items-center bg-gradient-hero from-white to-slate-50">
       <Header />
 
-      <main className="py-12 px-4 sm:px-6 lg:px-8 mt-12 mb-12">
+      <main className="px-4 sm:px-6 lg:px-8 py-12">
         {/* HERO */}
-        <section aria-label="About hero" className="">
+        <section aria-label="About hero" className=" max-w-7xl mx-auto" id='about-page'>
           <div className="relative bg-white overflow-hidden mt-6">
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/80 pointer-events-none w-full shadow-lg" />
-            <div className="grid grid-cols-1 lg:grid-cols-2 ">	
-              <div className="p-8 sm:p-12 lg:p-16 flex flex-col justify-center gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 ">
+              <div className="p-6 sm:p-4 lg:p-16 flex flex-col justify-center gap-6">
                 <span className="inline-block text-xs font-semibold uppercase text-primary/90 bg-primary/10 px-3 py-1 rounded-full">About Us</span>
 
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 leading-tight max-w-2xl">
@@ -93,7 +89,7 @@ const AboutUs = () => {
                   </a>
                 </div>
 
-                <div className="mt-4 flex items-center gap-6">
+                <div className="mt-4 flex flex-col sm:flex-row items-center gap-6">
                   <div className="flex items-baseline gap-2">
                     <div className="text-2xl sm:text-3xl font-bold text-slate-900">99.99%</div>
                     <div className="text-xs text-muted-foreground">uptime</div>
@@ -140,44 +136,127 @@ const AboutUs = () => {
 
         {/* COMPANY HISTORY */}
         <section id="our-history" className="mb-12">
-          <div className="bg-white rounded-xl shadow-sm p-6 sm:p-8 lg:p-10">
+          <div
+            className="bg-white rounded-xl shadow-sm p-6 sm:p-8 lg:p-10 max-w-7xl mx-auto"
+            style={{ borderTopLeftRadius: '0', borderTopRightRadius: '0' }}
+          >
             <div className="flex flex-col lg:flex-row gap-8">
               <div className="flex-1">
                 <h2 className="text-2xl sm:text-3xl font-bold mb-3">Our History</h2>
+
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed max-w-prose mb-4">
+                  Founded in 2020, we began as a small team of engineers and designers who shared a simple conviction:
+                  banking should be straightforward, secure, and designed around real people. In the early months we focused
+                  on building a reliable core — secure account infrastructure, clear user flows and a support-first culture.
+                  That foundation allowed us to move quickly while remaining rigorous about privacy and compliance.
+                </p>
+
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-4 max-w-prose">
+                  As we grew, our priorities stayed consistent: reduce friction for customers, communicate clearly, and
+                  continuously strengthen security. We iterated rapidly on product feedback, launched a modern mobile app,
+                  and opened APIs to partners who wanted to embed our payments and accounts into their experiences.
+                  Through every release we emphasized observability, automated testing and threat modeling so growth never
+                  outpaced safety.
+                </p>
+
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-4 max-w-prose">
+                  Our culture has always been customer-first. Beyond product features, we invested early in 24/7 support,
+                  transparent policies, and education — because financial confidence is about both the tools and the trust
+                  that surrounds them. That approach helped us win long-term customers and meaningful integrations with
+                  businesses that rely on predictable, private, and auditable systems.
+                </p>
+
                 <p className="text-sm sm:text-base text-muted-foreground leading-relaxed max-w-prose">
-                  We started with a simple mission: make banking accessible and trustworthy. Over the years we expanded features, hardened our security posture, and built an app and APIs that partners rely on.
+                  Today, we balance ambitious product work with enterprise-grade reliability. We continue to expand our
+                  engineering and security teams, collaborate with industry partners, and iterate on experiences that make
+                  managing money easier for millions of people. Looking forward, our roadmap centers on interoperability,
+                  better developer tooling, and accessible features that serve a wide range of customers — from individuals
+                  to large organizations.
                 </p>
 
                 <div className="mt-6 flex flex-wrap gap-3">
                   <span className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-xs">Security-first</span>
                   <span className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-xs">API-ready</span>
                   <span className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-xs">Customer-first</span>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-xs">Reliability</span>
                 </div>
               </div>
 
               <div className="w-full lg:w-1/3">
-                <ul className="space-y-4">
+                <ul className="space-y-6">
                   <li className="flex gap-4 items-start">
-                    <div className="w-12 h-12 rounded-md bg-primary/10 flex items-center justify-center font-semibold text-primary">2020</div>
-                    <div className="text-sm text-muted-foreground">Launched online accounts and payments.</div>
+                    <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center font-semibold text-primary text-sm">2020</div>
+                    <div>
+                      <div className="text-sm font-medium text-slate-900">Founding & First Launch</div>
+                      <div className="mt-1 text-sm text-muted-foreground">
+                        Launched our initial online accounts and payments platform, prioritized simple onboarding and
+                        a small set of high-quality features to validate product-market fit.
+                      </div>
+                    </div>
                   </li>
+
                   <li className="flex gap-4 items-start">
-                    <div className="w-12 h-12 rounded-md bg-primary/10 flex items-center justify-center font-semibold text-primary">2022</div>
-                    <div className="text-sm text-muted-foreground">Released mobile app and developer APIs.</div>
+                    <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center font-semibold text-primary text-sm">2021</div>
+                    <div>
+                      <div className="text-sm font-medium text-slate-900">Early Growth & Partnerships</div>
+                      <div className="mt-1 text-sm text-muted-foreground">
+                        Expanded customer base, established first partner integrations, and built out 24/7 support channels
+                        to ensure customers always had direct access to help.
+                      </div>
+                    </div>
                   </li>
+
                   <li className="flex gap-4 items-start">
-                    <div className="w-12 h-12 rounded-md bg-primary/10 flex items-center justify-center font-semibold text-primary">2024</div>
-                    <div className="text-sm text-muted-foreground">Scaled security and support teams for enterprise reliability.</div>
+                    <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center font-semibold text-primary text-sm">2022</div>
+                    <div>
+                      <div className="text-sm font-medium text-slate-900">Mobile App & Developer APIs</div>
+                      <div className="mt-1 text-sm text-muted-foreground">
+                        Released a polished mobile experience and public APIs to enable partners and developers to build on top
+                        of our platform, with clear docs and stable SDKs.
+                      </div>
+                    </div>
+                  </li>
+
+                  <li className="flex gap-4 items-start">
+                    <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center font-semibold text-primary text-sm">2023</div>
+                    <div>
+                      <div className="text-sm font-medium text-slate-900">Security & Compliance Milestones</div>
+                      <div className="mt-1 text-sm text-muted-foreground">
+                        Implemented advanced security controls, attained important compliance certifications, and introduced
+                        continuous monitoring and incident response practices to serve enterprise customers.
+                      </div>
+                    </div>
+                  </li>
+
+                  <li className="flex gap-4 items-start">
+                    <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center font-semibold text-primary text-sm">2024</div>
+                    <div>
+                      <div className="text-sm font-medium text-slate-900">Scale & Enterprise Reliability</div>
+                      <div className="mt-1 text-sm text-muted-foreground">
+                        Scaled infrastructure and support teams, deepened partnerships with financial institutions, and
+                        delivered features targeted at business customers requiring high availability and auditability.
+                      </div>
+                    </div>
+                  </li>
+
+                  <li className="flex gap-4 items-start">
+                    <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center font-semibold text-primary text-sm">2025</div>
+                    <div>
+                      <div className="text-sm font-medium text-slate-900">Looking Ahead</div>
+                      <div className="mt-1 text-sm text-muted-foreground">
+                        Continuing international expansion, refining developer experiences, and investing in AI-driven tools
+                        that help customers make smarter, more confident financial decisions — all while keeping privacy and
+                        security at the forefront.
+                      </div>
+                    </div>
                   </li>
                 </ul>
               </div>
             </div>
           </div>
         </section>
-
-        {/* CORE VALUES */}
         <section id="values" className="mb-12">
-          <h3 className="text-xl sm:text-2xl font-bold mb-6">Core Values</h3>
+          <h3 className="text-white text-xl sm:text-2xl font-bold mb-8 mt-12">Core Values</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {coreValues.map((v) => (
               <article
@@ -196,7 +275,7 @@ const AboutUs = () => {
                 </div>
 
                 <div className="mt-auto pt-4">
-                  <a href="#contact" className="inline-flex items-center text-sm text-primary font-medium hover:underline">Learn more</a>
+                  <a href="#about-page" className="inline-flex items-center text-sm text-primary font-medium hover:underline">Learn more</a>
                 </div>
               </article>
             ))}
@@ -205,12 +284,12 @@ const AboutUs = () => {
 
         {/* TEAM */}
         <section aria-label="Team" className="mb-20">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl sm:text-2xl font-bold">Meet the Team</h3>
+          <div className="flex items-center justify-between mb-6 mb-8 mt-12">
+            <h3 className="text-white text-xl sm:text-2xl font-bold">Meet the Team</h3>
             <p className="text-sm text-muted-foreground hidden sm:block">Lean teams, fast decisions, strong execution.</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-6">
             {team.map((m) => (
               <div
                 key={m.name}
