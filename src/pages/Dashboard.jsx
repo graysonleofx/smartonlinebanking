@@ -171,7 +171,38 @@ const Dashboard = () => {
     } catch (err) {
       console.error('Fetch transactions error:', err.message);
     }
-  };
+    };
+
+
+    // const fetchTransactions = async () => {
+    //   try {
+    //     const session = localStorage.getItem('userSession');
+    //     if (!session) return;
+
+    //     const user = JSON.parse(session);
+
+    //     const { data, error } = await supabase
+    //       .from('transactions')
+    //       .select('*')
+    //       .or(
+    //         `account_id.eq.${user.id},email.eq.${user.email}`
+    //       ) 
+    //       .order('date', { ascending: false });
+
+    //     if (error) {
+    //       console.error('Error fetching transactions:', error.message);
+    //       return;
+    //     }
+
+    //     if (data && data.length > 0) {
+    //       setTransactions(data);
+    //     } else {
+    //       setTransactions([]); // return empty array instead of null
+    //     }
+    //   } catch (err) {
+    //     console.error('Fetch transactions error:', err.message);
+    //   }
+    // };
 
 
     fetchBalances();
@@ -253,7 +284,7 @@ const Dashboard = () => {
   }];
   const bottomNavItems = [{
     id: 'home',
-    label: 'Dashboard',
+    label: 'Home',
     icon: Home
   }, {
     id: 'deposit',
@@ -636,7 +667,9 @@ const Dashboard = () => {
                         </TableCell>
                         <TableCell className="text-xs md:text-sm hidden md:table-cell">{transaction.date}</TableCell>
                         <TableCell>
-                        <Badge variant="secondary" className="text-xs">{transaction.status}</Badge>
+                          <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'} className={transaction.status === 'completed' ? 'text-white' : 'text-yellow-600'}>
+                            {transaction.status === 'completed' ? 'Completed' : 'Pending'}
+                          </Badge>
                         </TableCell>
                       </TableRow>
                     );
@@ -729,15 +762,17 @@ const Dashboard = () => {
                         <TableCell className="text-xs md:text-sm">{transaction.date}</TableCell>
                         <TableCell className="text-xs md:text-sm">{transaction.note}</TableCell>
                         <TableCell className="text-xs md:text-sm hidden md:table-cell">
-                          <Badge variant={transaction.type === 'Credit' ? 'default' : 'secondary'} className="text-xs">
-                          {transaction.type}
+                          <Badge variant={transaction.type === 'credit' ? 'default' : 'secondary'} className="text-xs">
+                          {transaction.type === 'credit' ? 'Credit' : 'Debit'}
                           </Badge>
                         </TableCell>
                         <TableCell className={`text-xs md:text-sm ${colorClass}`}>
                           {sign}${Math.abs(transaction.amount).toLocaleString()} 
                         </TableCell>
                         <TableCell>
-                          <Badge variant="secondary" className="text-xs">{transaction.status}</Badge>
+                          <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'} className={transaction.status === 'completed' ? 'text-white' : 'text-yellow-600'}>
+                            {transaction.status === 'completed' ? 'Completed' : 'Pending'}
+                          </Badge>
                         </TableCell>
                       </TableRow>
                     );

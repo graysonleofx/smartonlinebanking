@@ -48,6 +48,29 @@ const OpenAccount = () => {
       toast({ title: "Error", description: "Password must be at least 8 characters", variant: "destructive" });
       return;
     }
+
+    if (!formData.fullName || !formData.email || !formData.phone || !formData.dateOfBirth) {
+      toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" });
+      return;
+    }
+    
+    if (formData.referralCode && !/^REF-\d{10}$/.test(formData.referralCode)) {
+      toast({ title: "Error", description: "Invalid referral code format", variant: "destructive" });
+      return;
+    }
+
+    if (formData.nationalId && !/^\d{9,15}$/.test(formData.nationalId)) {
+      toast({ title: "Error", description: "Invalid SSN format", variant: "destructive" });
+      return;
+    }
+
+    if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+      toast({ title: "Error", description: "Invalid email address", variant: "destructive" });
+      return;
+    }
+
+    document.getElementById('openAccountButton').disabled = true;
+    document.getElementById('openAccountButton').innerText = 'Creating Account...';
     // Mock account creation
     const accountNumber = generateAccountNumber();
     setGeneratedAccountNumber(accountNumber);
@@ -60,6 +83,16 @@ const OpenAccount = () => {
 
      if (error) {
       console.error('Error creating account:', error.message);
+
+      if (error.message.includes('already registered')) {
+        toast({ title: "Error", description: "Email is already registered", variant: "destructive" });
+        document.getElementById('openAccountButton').disabled = false;
+        document.getElementById('openAccountButton').innerText = 'Open Account';
+      } else {
+        toast({ title: "Error", description: "Failed to create account", variant: "destructive" });
+        document.getElementById('openAccountButton').disabled = false;
+        document.getElementById('openAccountButton').innerText = 'Open Account';
+      }
       return;
     }
 
@@ -81,7 +114,8 @@ const OpenAccount = () => {
       referral_code: formData.referralCode,
       password: formData.confirmPassword,
       checking_account_balance: 0,
-      savings_account_balance: 0
+      savings_account_balance: 0,
+      balance: checking_account_balance + savings_account_balance
     }]);
 
     if (accountError) {
@@ -283,7 +317,7 @@ const OpenAccount = () => {
                   <span>Your details are encrypted and secure</span>
                 </div>
 
-                <Button type="submit" className="w-full" size="lg">
+                <Button type="submit" className="w-full" size="lg" id="openAccountButton">
                   Open Account
                 </Button>
               </form>

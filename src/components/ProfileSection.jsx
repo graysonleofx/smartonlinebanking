@@ -180,28 +180,18 @@ const ProfileSection = ({ userSession }) => {
                 className={!isEditing ? 'bg-muted/30' : ''}
               />
             </div>
-
             <div>
-              <Label htmlFor="accountNumber">Account Number</Label>
+              <Label htmlFor="address">Address</Label>
               <Input
-                id="accountNumber"
-                value={userSession.accountNumber}
-                disabled
-                className="bg-muted/30"
+                id="address"
+                value={profileData.address}
+                onChange={(e) => handleInputChange('address', e.target.value)}
+                disabled={!isEditing}
+                className={!isEditing ? 'bg-muted/30' : ''}
               />
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="address">Address</Label>
-            <Input
-              id="address"
-              value={profileData.address}
-              onChange={(e) => handleInputChange('address', e.target.value)}
-              disabled={!isEditing}
-              className={!isEditing ? 'bg-muted/30' : ''}
-            />
-          </div>
 
           {isEditing && (
             <div className="flex space-x-3 pt-4">

@@ -73,7 +73,34 @@ const SupportSection = () => {
             <p className="text-sm text-muted-foreground mb-3">
               Available 24/7
             </p>
-            <Button variant="outline" size="sm" className="w-full">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => {
+                const chatUrl = 'https://direct.lc.chat/19380503/'; // replace with your actual chat route or external chat widget URL
+                const newWindow = window.open(chatUrl, '_blank', 'noopener,noreferrer,width=420,height=720');
+                if (newWindow) {
+                  try {
+                    newWindow.focus();
+                  } catch {}
+                  toast({
+                    title: 'Chat Started',
+                    description: 'A live chat window has been opened. Our agents will be with you shortly.',
+                  });
+                } else {
+                  // Popup blocked — fallback to navigating in current tab
+                  toast({
+                    title: 'Popup Blocked',
+                    description: 'Please allow popups or click OK to open chat in this tab.',
+                    variant: 'destructive',
+                  });
+                  // fallback navigation
+                  window.location.href = chatUrl;
+                }
+              }}
+              aria-label="Start live chat"
+            >
               Start Chat
             </Button>
           </CardContent>
@@ -84,9 +111,42 @@ const SupportSection = () => {
             <Phone className="h-8 w-8 mx-auto mb-2 text-primary" />
             <h3 className="font-semibold mb-1">Phone Support</h3>
             <p className="text-sm text-muted-foreground mb-3">
-              +234 (0) 700 SMART BANK
+              +1 (800) 123-4567
             </p>
-            <Button variant="outline" size="sm" className="w-full">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={async () => {
+              const displayNumber = '+1 (800) 123-4567';
+              const telNumber = displayNumber.replace(/[^\d+]/g, '');
+              const telUrl = `tel:${telNumber}`;
+
+              // Try to open the dialer
+              try {
+                window.location.href = telUrl;
+                toast({
+                title: 'Calling Support',
+                description: `Attempting to call ${displayNumber}`,
+                });
+              } catch {
+                // Fallback: copy to clipboard and notify
+                if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(displayNumber);
+                toast({
+                  title: 'Phone number copied',
+                  description: 'Phone number copied to clipboard. Please call from your phone.',
+                });
+                } else {
+                toast({
+                  title: 'Unable to place call',
+                  description: `Please call ${displayNumber}`,
+                });
+                }
+              }
+              }}
+              aria-label="Call support"
+            >
               Call Now
             </Button>
           </CardContent>
@@ -97,9 +157,18 @@ const SupportSection = () => {
             <Mail className="h-8 w-8 mx-auto mb-2 text-primary" />
             <h3 className="font-semibold mb-1">Email Support</h3>
             <p className="text-sm text-muted-foreground mb-3">
-              support@smartbank.com
+              support@federaledgefinance.com
             </p>
-            <Button variant="outline" size="sm" className="w-full">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => {
+                const mailto = 'mailto:support@federaledgefinance.com';
+                window.location.href = mailto;
+              }}
+              aria-label="Send email"
+            >
               Send Email
             </Button>
           </CardContent>
@@ -230,7 +299,7 @@ const SupportSection = () => {
           <div className="p-3 bg-muted/30 rounded-lg">
             <h4 className="font-medium mb-1">What are the transfer limits?</h4>
             <p className="text-sm text-muted-foreground">
-              Daily transfer limit is ₦500,000. Monthly limit is ₦5,000,000.
+              Daily transfer limit is $500,000. Monthly limit is $5,000,000.
             </p>
           </div>
           
