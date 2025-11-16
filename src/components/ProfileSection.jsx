@@ -20,29 +20,78 @@ const ProfileSection = ({ userSession }) => {
   });
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
 
+  // useEffect(() => {
+  //   if (!userSession?.id) return;
+  //   let mounted = true;
+
+  //   (async () => {
+  //     setIsLoadingProfile(true);
+  //     const { data, error } = await supabase
+  //       .from('accounts')
+  //       .select('full_name, email, phone, address, date_of_birth, occupation')
+  //       .eq('id', userSession.id)
+  //       .single();
+
+  //     setIsLoadingProfile(false);
+
+  //     if (error) {
+  //       toast({
+  //         title: 'Failed to load profile',
+  //         description: error.message || 'Unable to fetch profile from server.'
+  //       });
+  //       return;
+  //     }
+
+  //     if (!mounted || !data) return;
+
+  //     setProfileData({
+  //       fullName: data.full_name || "",
+  //       email: data.email || "",
+  //       phone: data.phone || "",
+  //       address: data.address || "",
+  //       dateOfBirth: data.date_of_birth || "",
+  //       occupation: data.occupation || ""
+  //     });
+  //   })();
+
+  //   return () => {
+  //     mounted = false;
+  //   };
+  // }, [userSession?.id]);
+
+
   useEffect(() => {
-    if (!userSession?.id) return;
     let mounted = true;
 
-    (async () => {
+    const fetchProfile = async () => {
       setIsLoadingProfile(true);
+
+      // Get current logged-in user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        console.log("No logged-in user found");
+        setIsLoadingProfile(false);
+        return;
+      }
+
+      // Fetch profile from accounts table
       const { data, error } = await supabase
         .from('accounts')
-        .select('full_name, email, phone, address, date_of_birth, occupation')
-        .eq('id', userSession.id)
+        .select('id, full_name, email, phone, address, date_of_birth, occupation')
+        .eq('id', user.id)
         .single();
 
       setIsLoadingProfile(false);
 
-      if (error) {
+      if (error || !data) {
         toast({
           title: 'Failed to load profile',
-          description: error.message || 'Unable to fetch profile from server.'
+          description: error?.message || 'Unable to fetch profile from server.'
         });
         return;
       }
 
-      if (!mounted || !data) return;
+      if (!mounted) return;
 
       setProfileData({
         fullName: data.full_name || "",
@@ -52,23 +101,88 @@ const ProfileSection = ({ userSession }) => {
         dateOfBirth: data.date_of_birth || "",
         occupation: data.occupation || ""
       });
-    })();
+
+      // Save a copy to revert on cancel
+      setOriginalProfile({ ...data, fullName: data.full_name });
+    };
+
+    fetchProfile();
 
     return () => {
       mounted = false;
     };
-  }, [userSession?.id]);
+  }, []);
 
   const handleInputChange = (field, value) => {
     setProfileData(prev => ({ ...prev, [field]: value }));
   };
 
+  // const handleSave = async () => {
+  //   setIsSaving(true);
+    
+  //   // Update supabase with new full name
+  //   const {data, error } = await supabase
+  //     .from('accounts')
+  //     .update({
+  //       full_name: profileData.fullName,
+  //       email: profileData.email,
+  //       phone: profileData.phone,
+  //       address: profileData.address,
+  //       date_of_birth: profileData.dateOfBirth,
+  //       occupation: profileData.occupation
+  //     })
+  //     .eq('id', userSession.id);
+
+  //     if (data) {
+  //       toast({
+  //         title: "Profile Updated",
+  //         description: "Your profile information has been successfully saved.",
+  //       });
+  //     }
+
+  //   if (error) {
+  //     toast({
+  //       title: "Error Updating Profile",
+  //       description: "There was an error updating your profile information.",
+  //     });
+  //     setIsSaving(false);
+  //     return;
+  //   }
+
+  //   setIsSaving(false);
+  //   setIsEditing(false);
+    
+  //   toast({
+  //     title: "Profile Updated",
+  //     description: "Your profile information has been successfully saved.",
+  //   });
+  // };
+
+
   const handleSave = async () => {
     setIsSaving(true);
-    
-    // Update supabase with new full name
-    const {data, error } = await supabase
-      .from('accounts')
+
+    // First fetch the actual row to get the DB id
+    const { data: row, error: fetchError } = await supabase
+      .from("accounts")
+      .select("id")
+      .eq("email", profileData.email)
+      .single();
+
+    if (fetchError || !row) {
+      toast({
+        title: "User not found",
+        description: "Could not find your profile in database.",
+      });
+      setIsSaving(false);
+      return;
+    }
+
+    const userId = row.id;
+
+    // Now update using the correct id
+    const { error } = await supabase
+      .from("accounts")
       .update({
         full_name: profileData.fullName,
         email: profileData.email,
@@ -77,32 +191,59 @@ const ProfileSection = ({ userSession }) => {
         date_of_birth: profileData.dateOfBirth,
         occupation: profileData.occupation
       })
-      .eq('id', userSession.id);
-
-      if (data) {
-        toast({
-          title: "Profile Updated",
-          description: "Your profile information has been successfully saved.",
-        });
-      }
+      .eq("id", userId);
 
     if (error) {
       toast({
         title: "Error Updating Profile",
-        description: "There was an error updating your profile information.",
+        description: error.message,
       });
-      setIsSaving(false);
-      return;
+    } else {
+      toast({
+        title: "Profile Updated",
+        description: "Your profile information has been successfully saved.",
+      });
+      setIsEditing(false);
     }
 
     setIsSaving(false);
-    setIsEditing(false);
-    
-    toast({
-      title: "Profile Updated",
-      description: "Your profile information has been successfully saved.",
-    });
   };
+
+
+  const [originalProfile, setOriginalProfile] = useState(null);
+
+  // Capture the fetched profile as the "original" so we can revert on cancel
+  useEffect(() => {
+    // Only set originalProfile once after the fetch populates profileData
+    const hasAnyValue =
+      profileData.fullName ||
+      profileData.email ||
+      profileData.phone ||
+      profileData.address ||
+      profileData.dateOfBirth ||
+      profileData.occupation;
+
+    if (!originalProfile && hasAnyValue) {
+      setOriginalProfile({ ...profileData });
+    }
+  }, [profileData, originalProfile]);
+
+  // After a successful save (isEditing becomes false and not saving), update the original snapshot
+  useEffect(() => {
+    if (!isEditing && !isSaving && originalProfile) {
+      const same =
+        originalProfile.fullName === profileData.fullName &&
+        originalProfile.email === profileData.email &&
+        originalProfile.phone === profileData.phone &&
+        originalProfile.address === profileData.address &&
+        originalProfile.dateOfBirth === profileData.dateOfBirth &&
+        originalProfile.occupation === profileData.occupation;
+
+      if (!same) {
+        setOriginalProfile({ ...profileData });
+      }
+    }
+  }, [isEditing, isSaving, profileData, originalProfile]);
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -216,14 +357,19 @@ const ProfileSection = ({ userSession }) => {
                 variant="outline"
                 onClick={() => {
                   setIsEditing(false);
-                  setProfileData({
-                    fullName: userSession.fullName || "",
-                    email: userSession.email || "",
-                    phone: userSession.phone || "",
-                    address: userSession.address || "",
-                    dateOfBirth: userSession.dateOfBirth || "",
-                    occupation: userSession.occupation || ""
-                  });
+                  if (originalProfile) {
+                    setProfileData({ ...originalProfile });
+                  } else {
+                    // fallback to userSession values if originalProfile not available
+                    setProfileData({
+                      fullName: userSession.fullName || "",
+                      email: userSession.email || "",
+                      phone: userSession.phone || "",
+                      address: userSession.address || "",
+                      dateOfBirth: userSession.dateOfBirth || "",
+                      occupation: userSession.occupation || ""
+                    });
+                  }
                 }}
                 disabled={isSaving}
               >

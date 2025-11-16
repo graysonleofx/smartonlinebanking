@@ -133,16 +133,35 @@ const OpenAccount = () => {
   };
 
   const proceedToDashboard = () => {
-    // Store mock user data in localStorage for the dashboard
     localStorage.setItem('userSession', JSON.stringify({
+      id: user.id,                      // 🔥 MOST IMPORTANT
       fullName: formData.fullName,
       email: formData.email,
+      phone: formData.phone,
+      dateOfBirth: formData.dateOfBirth,
+      address: "",
+      occupation: "",
       accountNumber: generatedAccountNumber,
       checking_account_balance: 0,
       savings_account_balance: 0
     }));
+
     navigate('/dashboard');
   };
+
+  // const proceedToDashboard = async () => {
+  //   const { data: profile, error } = await supabase
+  //     .from('accounts')
+  //     .select('*')
+  //     .eq('id', user.id)
+  //     .single();
+
+  //   if (!error && profile) {
+  //     localStorage.setItem('userSession', JSON.stringify(profile));
+  //   }
+
+  //   navigate('/dashboard');
+  // };
 
   if (accountCreated) {
     return (
@@ -245,7 +264,7 @@ const OpenAccount = () => {
                     type="text"
                     value={formData.nationalId}
                     onChange={handleInputChange}
-                    placeholder="Enter your ID number"
+                    placeholder="Enter your SSN"
                   />
                 </div>
 
