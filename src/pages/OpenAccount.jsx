@@ -115,7 +115,7 @@ const OpenAccount = () => {
       password: formData.confirmPassword,
       checking_account_balance: 0,
       savings_account_balance: 0,
-      balance: checking_account_balance + savings_account_balance
+      balance: 0  
     }]);
 
     if (accountError) {
