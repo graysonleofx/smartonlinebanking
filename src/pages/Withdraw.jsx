@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import TransactionProgress from '@/components/TransactionProgress';
+import PendingTransactionProgress from '../components/PendingTransactionProgress.jsx';
 import TransactionReceipt from '@/components/TransactionReceipt.jsx';
 import PendingTransactionReceipt from '@/components/PenndingTransactionReceipt.jsx';
 import { ArrowLeft, ArrowUpFromLine } from 'lucide-react';
@@ -415,7 +416,7 @@ const Withdraw = () => {
       {/* Form */}
       <div className="p-4 pb-24">
         {showProgress ? (
-          <TransactionProgress type="withdrawal" onComplete={handleProgressComplete} />
+          <TransactionProgress type="withdrawal" onComplete={handleProgressComplete} /> 
         ) : showReceipt ? (
           <TransactionReceipt 
             type="withdrawal" 

@@ -106,7 +106,7 @@ const SupportSection = () => {
           </CardContent>
         </Card>
 
-        <Card className="text-center">
+        {/* <Card className="text-center">
           <CardContent className="p-4">
             <Phone className="h-8 w-8 mx-auto mb-2 text-primary" />
             <h3 className="font-semibold mb-1">Phone Support</h3>
@@ -150,7 +150,7 @@ const SupportSection = () => {
               Call Now
             </Button>
           </CardContent>
-        </Card>
+        </Card> */}
 
         <Card className="text-center">
           <CardContent className="p-4">
@@ -183,7 +183,9 @@ const SupportSection = () => {
             <div>
               <h3 className="font-semibold">Support Hours</h3>
               <p className="text-sm text-muted-foreground">
-                Monday - Friday: 8:00 AM - 8:00 PM (WAT) | Weekends: 10:00 AM - 6:00 PM (WAT)
+                Monday - Friday: 8:00 AM - 8:00 PM (EST) <br />
+                Saturday: 9:00 AM - 5:00 PM (EST) <br />
+                Sunday: Closed
               </p>
             </div>
           </div>
