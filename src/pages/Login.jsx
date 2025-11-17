@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,7 @@ const Login = () => {
   });
   const [user, setUser] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [userSession, setUserSession] = useState(null);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -39,6 +40,9 @@ const Login = () => {
     }
     if (password.length < 8) {
       toast({ description: 'Password must be at least 8 characters long', duration: 4000 });
+      document.getElementById('login-button').disabled = false;
+      document.getElementById('login-button').innerText = 'Log in';
+
       return;
     }
 
@@ -128,6 +132,13 @@ const Login = () => {
       toast({ description: 'OTP verification failed. Please try again.', duration: 4000 });
     }
   };
+
+  useEffect(() => {
+    const session = localStorage.getItem('userSession');
+    if (session) {
+      setUserSession(JSON.parse(session));
+    }
+  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
@@ -241,6 +252,33 @@ const Login = () => {
                   <InputOTPSlot index={5} />
                 </InputOTPGroup>
               </InputOTP>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground">Didn't receive the email?</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={async () => {
+                  if (!user?.email) {
+                    alert('User session not found. Please login again.');
+                    return;
+                  }
+                  try {
+                    const res = await sendOtp(user.email);
+                    if (res?.success) {
+                      setOtpValue('');
+                      alert('OTP resent to your email.');
+                    } else {
+                      alert(res?.message || 'Failed to resend OTP. Please try again.');
+                    }
+                  } catch (err) {
+                    console.error('Resend OTP error:', err);
+                    alert('Failed to resend OTP. Please try again.');
+                  }
+                }}
+              >
+                Resend OTP
+              </Button>
             </div>
             <Button 
               className="w-full" 

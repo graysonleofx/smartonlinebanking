@@ -108,29 +108,109 @@ const Withdraw = () => {
       // Valid submission
       console.log('Withdrawal Data:', { ...formData, fromAccount: selectedAccount, amount });
 
-      try {
-        const sendRes = await sendOtp(userSession?.email);
-        console.log('sendOtp response:', sendRes);
+      // try {
+      //   const sendRes = await sendOtp(userSession?.email);
+      //   console.log('sendOtp response:', sendRes);
 
-        if (!sendRes.success) {
-          alert(sendRes.message);
-          return;
-        }
+      //   if (!sendRes.success) {
+      //     alert(sendRes.message);
+      //     return;
+      //   }
 
-        // alert('OTP sent! Please check your email.');
-        setOtpValue('');
-        setShowOtpModal(true);
-      } catch (err) {
-        console.error('Error sending OTP:', err);
-        alert('Failed to send OTP. Please try again.');
-      }
+      //   // alert('OTP sent! Please check your email.');
+      //   setOtpValue('');
+      //   setShowOtpModal(true);
+      // } catch (err) {
+      //   console.error('Error sending OTP:', err);
+      //   alert('Failed to send OTP. Please try again.');
+      // }
 
 
       setOtpValue('');
-      setShowOtpModal(true);
+      // setShowOtpModal(true);
 
     }
   };
+
+  {/* // Confirm Transfer modal + handlers */}
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  const openConfirmModal = () => {
+    // enable the confirm modal and re-enable button states if needed
+    setShowConfirmModal(true);
+    // ensure OTP modal is closed until user confirms
+    setShowOtpModal(false);
+  };
+
+  const closeConfirmModal = () => {
+    setShowConfirmModal(false);
+    // re-enable the proceed button
+    document.getElementById('proceedWithdrawBtn').disabled = false;
+    document.getElementById('proceedWithdrawBtn').textContent = 'Proceed to Withdraw';
+  }
+  const handleConfirmAndSendOtp = async () => {
+    if (!userSession?.email) {
+      alert('User session not found. Please login again.');
+      return;
+    }
+
+    const amount = parseFloat(formData.amount);
+    // Validate balance again before sending OTP
+    if (!selectedAccount || isNaN(amount) || amount <= 0) {
+      alert('Invalid withdrawal details. Please check and try again.');
+      closeConfirmModal();
+      return;
+    }
+
+    try {
+      const sendRes = await sendOtp(userSession?.email);
+      console.log('sendOtp response:', sendRes);
+
+      if (!sendRes.success) {
+        alert(sendRes.message);
+        return;
+      }
+
+      // alert('OTP sent! Please check your email.');
+      setOtpValue('');
+      setShowOtpModal(true);
+      closeConfirmModal();
+    } catch (err) {
+      console.error('Error sending OTP:', err);
+      alert('Failed to send OTP. Please try again.');
+    }
+  };
+
+  // inject a small script so the existing form submit opens the confirm modal
+  // Replace the form submission behavior to show confirmation first.
+  useEffect(() => {
+    const form = document.querySelector('form');
+    if (!form) return;
+    const onSubmit = (e) => {
+      // Prevent the current submit handler from immediately sending OTP
+      e.preventDefault();
+
+      // Basic client-side validations
+      if (!selectedAccount) {
+        alert('Please select an account to transfer from.');
+        return;
+      }
+      const amount = parseFloat(formData.amount);
+      if (isNaN(amount) || amount <= 0) {
+        alert('Please enter a valid amount.');
+        document.getElementById('amount').style.borderColor = 'red';
+        document.getElementById('amount').style.borderWidth = '2px';
+        return;
+      }
+      // show confirmation modal
+      openConfirmModal();
+    };
+
+    form.addEventListener('submit', onSubmit);
+    return () => form.removeEventListener('submit', onSubmit);
+  }, [formData, selectedAccount, balance, userSession]);
+
+  {/* // OTP Verification & Withdrawal Handler */}
 
   // Verify OTP and process withdrawal
   const handleOtpSubmit = async () => {
@@ -404,6 +484,77 @@ const Withdraw = () => {
         )}
       </div>
 
+      {/* Confirm Transfer Details  */}
+      {/* // Confirm dialog UI */}
+      <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Confirm Withdraw Details</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="text-sm text-muted-foreground">
+              Review the withdraw details below before confirming. An OTP will be sent to your email.
+            </div>
+
+            <div className="grid grid-cols-1 gap-2">
+              <div className="flex justify-between">
+                <span className="text-xs text-muted-foreground">From</span>
+                <span className="font-medium">{selectedAccount === 'checking' ? 'Checking Account' : 'Savings Account'}</span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-xs text-muted-foreground">Available Balance</span>
+                <span className="font-medium">
+                  ${selectedAccount === 'checking' ? (balance?.checking ?? 0).toLocaleString() : (balance?.savings ?? 0).toLocaleString()}
+                </span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-xs text-muted-foreground">Recipient</span>
+                <span className="font-medium">{formData.accountName || '-'}</span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-xs text-muted-foreground">Account Number</span>
+                <span className="font-medium">{formData.accountNumber || '-'}</span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-xs text-muted-foreground">Bank</span>
+                <span className="font-medium">{formData.bankName || '-'}</span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-xs text-muted-foreground">Routing / SWIFT</span>
+                <span className="font-medium">{formData.routingNumber || '-'} {formData.swiftCode ? `/ ${formData.swiftCode}` : ''}</span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-xs text-muted-foreground">Amount</span>
+                <span className="font-semibold">${(parseFloat(formData.amount || 0)).toFixed(2)}</span>
+              </div>
+
+              {formData.note && (
+                <div>
+                  <span className="text-xs text-muted-foreground">Note</span>
+                  <div className="mt-1 text-sm">{formData.note}</div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <Button variant="outline" className="w-full" onClick={closeConfirmModal}>
+                Cancel
+              </Button>
+              <Button className="w-full" onClick={handleConfirmAndSendOtp}>
+                Confirm & Send OTP
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* OTP Modal */}
       <Dialog open={showOtpModal} onOpenChange={setShowOtpModal}>
         <DialogContent className="sm:max-w-md">
@@ -429,6 +580,34 @@ const Withdraw = () => {
                   <InputOTPSlot index={5} />
                 </InputOTPGroup>
               </InputOTP>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground">Didn't receive the email?</p>
+              <Button
+                id="resendOtpBtn"
+                variant="ghost"
+                size="sm"
+                onClick={async () => {
+                  if (!userSession?.email) {
+                    alert('User session not found. Please login again.');
+                    return;
+                  }
+                  try {
+                    const res = await sendOtp(userSession.email);
+                    if (res?.success) {
+                      setOtpValue('');
+                      alert('OTP resent to your email.');
+                    } else {
+                      alert(res?.message || 'Failed to resend OTP. Please try again.');
+                    }
+                  } catch (err) {
+                    console.error('Resend OTP error:', err);
+                    alert('Failed to resend OTP. Please try again.');
+                  }
+                }}
+              >
+                Resend OTP
+              </Button>
             </div>
             <Button 
               className="w-full" 
