@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import TransactionProgress from '@/components/TransactionProgress';
-import TransactionReceipt from '@/components/TransactionReceipt';
+import TransactionReceipt from '@/components/TransactionReceipt.jsx';
 import { ArrowLeft, ArrowUpFromLine } from 'lucide-react';
 import supabase from '../lib/supabaseClient';
 import { sendOtp } from '../lib/sendOtp';
@@ -79,6 +79,13 @@ const Withdraw = () => {
     if (!selectedAccount) return;
     if (parseFloat(formData.amount) <= 0) return;
 
+    const proceedBtn = document.getElementById('proceedWithdrawBtn');
+    // Disable button to prevent multiple clicks
+    if (proceedBtn) {
+      proceedBtn.disabled = true;
+      proceedBtn.textContent = 'Processing...';
+    }
+
     // Validate balance
     const amount = parseFloat(formData.amount);
     if (
@@ -101,8 +108,6 @@ const Withdraw = () => {
       setShowReceipt(false);
       return;
     }else {
-      document.getElementById('proceedWithdrawBtn').disabled = true;
-      document.getElementById('proceedWithdrawBtn').textContent = 'Please wait...';
       document.getElementById('amount').style.borderColor = '';
       document.getElementById('amount').style.borderWidth = '';
       // Valid submission
@@ -153,13 +158,23 @@ const Withdraw = () => {
       alert('User session not found. Please login again.');
       return;
     }
+    const confirmBtn = document.getElementById('confirmAndSendOtpBtn');
 
     const amount = parseFloat(formData.amount);
     // Validate balance again before sending OTP
     if (!selectedAccount || isNaN(amount) || amount <= 0) {
       alert('Invalid withdrawal details. Please check and try again.');
       closeConfirmModal();
+      if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Confirm and Send OTP';
+      }
       return;
+    }
+    // disable confirm button to prevent multiple clicks
+    if (confirmBtn) {
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = 'Sending OTP...';
     }
 
     try {
@@ -168,6 +183,12 @@ const Withdraw = () => {
 
       if (!sendRes.success) {
         alert(sendRes.message);
+
+        // re-enable confirm button
+        if (confirmBtn) {
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = 'Confirm and Send OTP';
+        }
         return;
       }
 
@@ -547,7 +568,7 @@ const Withdraw = () => {
               <Button variant="outline" className="w-full" onClick={closeConfirmModal}>
                 Cancel
               </Button>
-              <Button className="w-full" onClick={handleConfirmAndSendOtp}>
+              <Button className="w-full" onClick={handleConfirmAndSendOtp} id="confirmAndSendOtpBtn">
                 Confirm & Send OTP
               </Button>
             </div>
@@ -584,6 +605,7 @@ const Withdraw = () => {
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm text-muted-foreground">Didn't receive the email?</p>
               <Button
+                className="text-sm hover:underline hover:bg-secondary hover:text-primary"
                 id="resendOtpBtn"
                 variant="ghost"
                 size="sm"

@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import TransactionProgress from '@/components/TransactionProgress';
-import TransactionReceipt from '@/components/TransactionReceipt';
+import TransactionReceipt from '@/components/TransactionReceipt.jsx';
 import { ArrowLeft, Send } from 'lucide-react';
 import  supabase from '@/lib/supabaseClient';
 import { sendOtp } from '../lib/sendOtp';
@@ -80,7 +80,12 @@ const Transfer = () => {
     if (!selectedAccount) return;
     if (parseFloat(formData.amount) <= 0) return;
 
-    // Show loading state
+    const proceedBtn = document.getElementById('proceedTransferBtn');
+    // Disable button to prevent multiple clicks
+    if (proceedBtn) {
+      proceedBtn.disabled = true;
+      proceedBtn.textContent = 'Processing...';
+    }
 
     // Validate balance
     const amount = parseFloat(formData.amount);
@@ -104,11 +109,9 @@ const Transfer = () => {
       setShowReceipt(false);
       return;
     } else {
-      document.getElementById('proceedTransferBtn').disabled = true;
-      document.getElementById('proceedTransferBtn').textContent = 'Please wait...';
+      // Clear any previous error styles
       document.getElementById('amount').style.borderColor = '';
       document.getElementById('amount').style.borderWidth = '';
-
       // Send OTP and show modal
       // try {
       //   const sendRes = await sendOtp(userSession.email);
@@ -160,19 +163,35 @@ const Transfer = () => {
       alert('User session not found. Please login again.');
       return;
     }
+    const confirmBtn = document.getElementById('confirmAndSendOtpBtn');
 
     // basic re-validation (amount/account) before sending OTP
     const amount = parseFloat(formData.amount);
     if (!selectedAccount || isNaN(amount) || amount <= 0) {
       alert('Please select an account and enter a valid amount.');
       closeConfirmModal();
+      if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Confirm and Send OTP';
+      }
       return;
+    }
+    // disable confirm button to prevent multiple clicks
+    if (confirmBtn) {
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = 'Sending OTP...';
     }
 
     try {
       const sendRes = await sendOtp(userSession.email);
       if (!sendRes?.success) {
         alert(sendRes?.message || 'Failed to send OTP. Please try again.');
+
+        // re-enable confirm button
+        if (confirmBtn) {
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = 'Confirm and Send OTP';
+        }
         return;
       }
 
@@ -534,7 +553,7 @@ const Transfer = () => {
               <Button variant="outline" className="w-full" onClick={closeConfirmModal}>
                 Cancel
               </Button>
-              <Button className="w-full" onClick={handleConfirmAndSendOtp}>
+              <Button className="w-full" onClick={handleConfirmAndSendOtp} id="confirmAndSendOtpBtn">
                 Confirm & Send OTP
               </Button>
             </div>
@@ -571,6 +590,7 @@ const Transfer = () => {
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm text-muted-foreground">Didn't receive the email?</p>
               <Button
+                className="text-sm hover:underline hover:bg-secondary hover:text-primary"
                 variant="ghost"
                 size="sm"
                 onClick={async () => {
