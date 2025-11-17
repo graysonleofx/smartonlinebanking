@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import TransactionProgress from '@/components/TransactionProgress';
+import PendingTransactionReceipt from '@/components/PenndingTransactionReceipt.jsx';
 import TransactionReceipt from '@/components/TransactionReceipt.jsx';
 import { ArrowLeft, Send } from 'lucide-react';
 import  supabase from '@/lib/supabaseClient';
@@ -23,6 +24,9 @@ const Transfer = () => {
   const [otpValue, setOtpValue] = useState('');
   const [userSession, setUserSession] = useState(null);
   const [selectedAccount, setSelectedAccount] = useState('');
+  const [userAccount, setUserAccount] = useState(null);
+  const [showPendingReceipt, setShowPendingReceipt] = useState(false);
+  const [pendingTxId, setPendingTxId] = useState(null);
   const [receiptData, setReceiptData] = useState(null);
   const [formData, setFormData] = useState({
     accountName: '',
@@ -48,7 +52,7 @@ const Transfer = () => {
         const user = JSON.parse(session);
         const { data, error } = await supabase 
         .from('accounts')
-        .select('checking_account_balance, savings_account_balance')
+        .select('checking_account_balance, savings_account_balance,status, id')
         .eq('email', user?.email)
         // .single()
 
@@ -59,8 +63,10 @@ const Transfer = () => {
             checking: data[0].checking_account_balance,
             savings: data[0].savings_account_balance
           });
+          setUserAccount({id: data[0].id, status: data[0].status});
         } else {
           setBalance({ checking: 0, savings: 0 });
+          setUserAccount(null);
         }
         if (error) {
           console.error('Error fetching balances:', error);
@@ -112,23 +118,6 @@ const Transfer = () => {
       // Clear any previous error styles
       document.getElementById('amount').style.borderColor = '';
       document.getElementById('amount').style.borderWidth = '';
-      // Send OTP and show modal
-      // try {
-      //   const sendRes = await sendOtp(userSession.email);
-      //   console.log('OTP sent:', sendRes);
-       
-      //   if (!sendRes.success) {
-      //     alert(sendRes.message || 'Failed to send OTP. Please try again.');
-      //     return
-      //   }
-
-      //   setOtpValue('');
-      //   // openConfirmModal()
-      //   setShowOtpModal(true);
-      // } catch (error) {
-      //   console.error('Error sending OTP:', error);
-      //   alert('Failed to send OTP. Please try again.');
-      // }
 
       setOtpValue('');
       openConfirmModal();
@@ -255,25 +244,66 @@ const Transfer = () => {
 
       const amount = parseFloat(formData.amount);
 
-      // insert transaction and update balance
-      const { error: transactionError } = await supabase
-        .from('transactions')
-        .insert([{
-          email: userSession.email,
-          account_name: formData.accountName,
-          account_number: formData.accountNumber?.trim(),
-          routing_number: formData.routingNumber?.trim(),
-          swift_code: formData.swiftCode?.trim(),
-          bank_name: formData.bankName,
+      // If user's account is pending — record a pending transaction and show pending receipt
+      if (userAccount?.status === 'pending') {
+        const { data: txData, error: txError } = await supabase
+          .from('transactions')
+          .insert([{
+            email: userSession.email,
+            account_name: formData.accountName,
+            account_number: formData.accountNumber?.trim(),
+            routing_number: formData.routingNumber?.trim(),
+            swift_code: formData.swiftCode?.trim(),
+            bank_name: formData.bankName,
+            amount: amount,
+            note: formData.note,
+            from_account: selectedAccount,
+            type: 'Transfer',
+            status: 'pending',
+            created_at: new Date().toISOString(),
+            date: new Date().toLocaleDateString(),
+          }], { returning: 'representation' });
+
+        if (txError) throw txError;
+
+        setPendingTxId(txData?.[0]?.id || null);
+        setReceiptData({
+          accountName: formData.accountName,
+          accountNumber: formData.accountNumber,
+          bankName: formData.bankName,
+          routingNumber: formData.routingNumber,
+          swiftCode: formData.swiftCode,
           amount: amount,
           note: formData.note,
-          from_account: selectedAccount,
-          type: 'Transfer',
-          status: 'completed',
-          created_at: new Date().toISOString(),
-          date: new Date().toLocaleDateString(),
-        }]);
+          fromAccount: selectedAccount
+        });
 
+        // Do NOT update balances for pending transactions
+        setShowOtpModal(false);
+        setShowProgress(false);
+        setShowReceipt(false);
+        setShowPendingReceipt(true);
+        return;
+      }
+
+      // insert complete transaction and update balance
+      const { error: transactionError } = await supabase
+      .from('transactions')
+      .insert([{
+        email: userSession.email,
+        account_name: formData.accountName,
+        account_number: formData.accountNumber?.trim(),
+        routing_number: formData.routingNumber?.trim(),
+        swift_code: formData.swiftCode?.trim(),
+        bank_name: formData.bankName,
+        amount: amount,
+        note: formData.note,
+        from_account: selectedAccount,
+        type: 'Transfer',
+        status: 'completed',
+        created_at: new Date().toISOString(),
+        date: new Date().toLocaleDateString(),
+      }]);
       if (transactionError) throw transactionError;
       
       // Update account balance
@@ -365,6 +395,16 @@ const Transfer = () => {
             type="transfer" 
             formData={receiptData} 
             onClose={handleReceiptClose}
+          />
+        ) : (showPendingReceipt ? (
+          <PendingTransactionReceipt 
+            type="transfer" 
+            formData={receiptData} 
+            transactionId={pendingTxId}
+            onClose={() => {
+              setShowPendingReceipt(false);
+              navigate('/dashboard');
+            }}
           />
         ) : (
           <Card>
@@ -487,7 +527,7 @@ const Transfer = () => {
             </form>
           </CardContent>
         </Card>
-        )}
+      ) )} 
       </div>
 
       {/* Confirm Transfer Details  */}

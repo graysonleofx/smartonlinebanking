@@ -123,13 +123,13 @@ Note: ${formData.note || '-'}
         <div className="space-y-2">
           <div className="flex justify-between">
             <span className="text-sm text-muted-foreground">Amount</span>
-            <span className="text-sm">₦{amount.toLocaleString()}</span>
+            <span className="text-sm">${amount.toLocaleString()}</span>
           </div>
 
           {fee > 0 && (
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">Transaction Fee</span>
-              <span className="text-sm">₦{fee.toLocaleString()}</span>
+              <span className="text-sm">${fee.toLocaleString()}</span>
             </div>
           )}
 
@@ -137,30 +137,35 @@ Note: ${formData.note || '-'}
 
           <div className="flex justify-between font-medium">
             <span>Total Amount</span>
-            <span className="text-lg">₦{totalAmount.toLocaleString()}</span>
+            <span className="text-lg">${totalAmount.toLocaleString()}</span>
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-2 pt-4">
+        <div className="grid grid-cols-2 gap-2 pt-4">
           <Button variant="outline" size="sm" onClick={handleCopy} className="flex items-center gap-1">
             {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
             {copied ? 'Copied' : 'Copy'}
           </Button>
 
-          <Button variant="outline" size="sm" className="flex items-center gap-1">
-            <Download className="h-3 w-3" />
-            PDF
-          </Button>
-
-          <Button variant="outline" size="sm" className="flex items-center gap-1">
+          <Button variant="outline" size="sm" className="flex items-center gap-1" onClick={() => {
+            const blob = new Blob([`Transaction Receipt\n\nTransaction ID: ${transactionId}\nType: ${type === 'transfer' ? 'Money Transfer' : 'Withdrawal'}\nDate: ${timestamp}\nAmount: $${amount.toLocaleString()}\nRecipient: ${formData.accountName || '-'}\nAccount: ${formData.accountNumber || '-'}\nBank: ${formData.bankName || '-'}\nStatus: Pending\nNote: ${formData.note || '-'}`], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `Transaction_Receipt_${transactionId}.txt`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+          }}>
             <Share className="h-3 w-3" />
             Share
           </Button>
         </div>
 
         <div className="flex gap-2">
-          <Button onClick={onClose} className="flex-1" variant="ghost">
-            Return to Dashboard
+          <Button onClick={() => window.open('mailto:support@federaledgefinance.com')} className="flex-1" variant="ghost">
+            Contact Support
           </Button>
 
           <Button

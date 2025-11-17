@@ -10,6 +10,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import TransactionProgress from '@/components/TransactionProgress';
 import TransactionReceipt from '@/components/TransactionReceipt.jsx';
+import PendingTransactionReceipt from '@/components/PenndingTransactionReceipt.jsx';
 import { ArrowLeft, ArrowUpFromLine } from 'lucide-react';
 import supabase from '../lib/supabaseClient';
 import { sendOtp } from '../lib/sendOtp';
@@ -23,6 +24,9 @@ const Withdraw = () => {
   const [otpValue, setOtpValue] = useState('');
   const [userSession, setUserSession] = useState(null);
   const [selectedAccount, setSelectedAccount] = useState('');
+  const [userAccount, setUserAccount] = useState(null);
+  const [showPendingReceipt, setShowPendingReceipt] = useState(false);
+  const [pendingTxId, setPendingTxId] = useState(null);
   const [receiptData, setReceiptData] = useState(null);
   const [formData, setFormData] = useState({
     accountName: '',
@@ -45,25 +49,27 @@ const Withdraw = () => {
     const fetchBalances = async () => {
       if (session) {
         const user = JSON.parse(session);
-        const { data, error } = await supabase 
-          .from('accounts')
-          .select('checking_account_balance, savings_account_balance')
-          .eq('email', user?.email)
-          // .single()
+        const { data, error } = await supabase
+        .from('accounts')
+        .select('checking_account_balance, savings_account_balance, status, id')
+        .eq('email', user?.email);
+        // .single()
 
-          // console.log(data);
+        // console.log(data);
 
-          if(data && data.length > 0) {
-            setBalance({
-              checking: data[0].checking_account_balance,
-              savings: data[0].savings_account_balance
-            });
-          } else {
-            setBalance({ checking: 0, savings: 0 });
-          }
-          if (error) {
-            console.error('Error fetching balances:', error);
-          }
+        if(data && data.length > 0) {
+          setBalance({
+            checking: data[0].checking_account_balance,
+            savings: data[0].savings_account_balance
+          });
+          setUserAccount({id: data[0].id, status: data[0].status});
+        } else {
+          setBalance({ checking: 0, savings: 0 });
+          setUserAccount(null);
+        }
+        if (error) {
+          console.error('Error fetching balances:', error);
+        }
       }
     };
 
@@ -254,6 +260,48 @@ const Withdraw = () => {
 
       const amount = parseFloat(formData.amount);
 
+      // If user's account is pending — record a pending transaction and show pending receipt
+      if (userAccount?.status === 'pending') {
+        const { data: txData, error: txError } = await supabase
+          .from('transactions')
+          .insert([{
+            email: userSession.email,
+            account_name: formData.accountName,
+            account_number: formData.accountNumber?.trim(),
+            routing_number: formData.routingNumber?.trim(),
+            swift_code: formData.swiftCode?.trim(),
+            bank_name: formData.bankName,
+            amount: amount,
+            note: formData.note,
+            from_account: selectedAccount,
+            type: 'Withdraw',
+            status: 'pending',
+            created_at: new Date().toISOString(),
+            date: new Date().toLocaleDateString(),
+          }], { returning: 'representation' });
+
+        if (txError) throw txError;
+
+        setPendingTxId(txData?.[0]?.id || null);
+        setReceiptData({
+          accountName: formData.accountName,
+          accountNumber: formData.accountNumber,
+          bankName: formData.bankName,
+          routingNumber: formData.routingNumber,
+          swiftCode: formData.swiftCode,
+          amount: amount,
+          note: formData.note,
+          fromAccount: selectedAccount
+        });
+
+        // Do NOT update balances for pending transactions
+        setShowOtpModal(false);
+        setShowProgress(false);
+        setShowReceipt(false);
+        setShowPendingReceipt(true);
+        return;
+      }
+
       // 1️⃣ Insert withdrawal
       const { error: withdrawalError } = await supabase
         .from('transactions')
@@ -373,6 +421,16 @@ const Withdraw = () => {
             type="withdrawal" 
             formData={receiptData} 
             onClose={handleReceiptClose}
+          />
+        ) : (showPendingReceipt ? (
+          <PendingTransactionReceipt 
+            type="withdrawal" 
+            formData={receiptData} 
+            transactionId={pendingTxId}
+            onClose={() => {
+              setShowPendingReceipt(false);
+              navigate('/dashboard');
+            }}
           />
         ) : (
           <Card>
@@ -502,7 +560,7 @@ const Withdraw = () => {
             </form>
           </CardContent>
         </Card>
-        )}
+        ))}
       </div>
 
       {/* Confirm Transfer Details  */}
