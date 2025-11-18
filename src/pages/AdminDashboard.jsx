@@ -241,7 +241,7 @@ const AdminDashboard = () => {
               </div>
 
               {/* Quick Stats and Recent Transactions */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+            {/* <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
               <Card className="lg:col-span-1">
                 <CardHeader>
                   <CardTitle className="flex items-center">
@@ -297,7 +297,7 @@ const AdminDashboard = () => {
                   </div>
                 </CardContent>
               </Card>
-            </div>
+            </div> */}
         </div>
       </div>
     </div>

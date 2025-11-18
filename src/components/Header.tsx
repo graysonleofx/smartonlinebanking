@@ -75,7 +75,7 @@ const Header = () => {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <div className="flex items-center">
-            <div className="flex items-center space-x-3 group cursor-pointer" onClick={() => handleSmoothScroll('/home')}>
+            <div className="flex items-center space-x-3 group cursor-pointer" onClick={() => handleSmoothScroll('#home')}>
               <div className="relative">
                 {/* <div className="h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
                   <Shield className="w-4 h-4 text-white" />

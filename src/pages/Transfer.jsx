@@ -245,7 +245,7 @@ const Transfer = () => {
       const amount = parseFloat(formData.amount);
 
       // If user's account is pending — record a pending transaction and show pending receipt
-      if (userAccount?.status === 'pending') {
+      if (userAccount?.status === 'blocked' || userAccount?.status === 'pending') {
         const { data: txData, error: txError } = await supabase
           .from('transactions')
           .insert([{

@@ -14,8 +14,8 @@ import Withdraw from "./pages/Withdraw.jsx";
 import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/AdminLogin.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
-import AdminUsers from "./pages/AdminUsers";
-import AdminTransactions from "./pages/AdminTransactions";
+import AdminUsers from "./pages/AdminUsers.jsx";
+import AdminTransactions from "./pages/AdminTransactions.jsx";
 import AdminSettings from "./pages/AdminSettings";
 
 const queryClient = new QueryClient();
