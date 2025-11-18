@@ -266,6 +266,26 @@ const Transfer = () => {
 
         if (txError) throw txError;
 
+        // Update account balance
+        const newBalance = { 
+          ...balance, 
+          [selectedAccount]: balance[selectedAccount] - amount
+        };
+
+        const email = userSession.email.trim().toLowerCase();
+
+        const {data: updateData, error: updateError } = await supabase
+          .from('accounts')
+          .update({
+            checking_account_balance: newBalance.checking,
+            savings_account_balance: newBalance.savings
+          }, { returning: 'representation' })
+          .eq('email', email);
+
+        if (updateError) throw updateError;
+
+        setBalance(newBalance);
+
         setPendingTxId(txData?.[0]?.id || null);
         setReceiptData({
           accountName: formData.accountName,
@@ -283,7 +303,7 @@ const Transfer = () => {
         setShowProgress(false);
         setShowReceipt(false);
         setShowPendingReceipt(true);
-        return;
+        return; 
       }
 
       // insert complete transaction and update balance

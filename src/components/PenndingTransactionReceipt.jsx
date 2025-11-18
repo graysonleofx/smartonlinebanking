@@ -165,7 +165,7 @@ Note: ${formData.note || '-'}
 
         <div className="flex gap-2">
           <Button onClick={() => window.open('mailto:support@federaledgefinance.com')} className="flex-1" variant="ghost">
-            Contact Support
+            Report issue
           </Button>
 
           <Button

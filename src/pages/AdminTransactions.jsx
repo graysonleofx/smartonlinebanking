@@ -217,7 +217,7 @@
         note: formData.note || 'Admin transaction',
         status: 'completed',
         created_at: new Date().toISOString(),
-        date: new Date().toLocaleDateString(),
+        date: formData.date || new Date().toISOString() // include date if provided,
       };
 
       try {
@@ -396,6 +396,16 @@
                       onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
                       placeholder="Transaction description..."
                       rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="date">Date</Label>
+                    <Input
+                      id="date"
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
                     />
                   </div>
                 </div>
