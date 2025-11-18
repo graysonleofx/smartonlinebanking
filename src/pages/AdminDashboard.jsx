@@ -151,7 +151,7 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex  min-h-screen bg-background">
       <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex-1 lg:ml-0">
@@ -180,7 +180,7 @@ const AdminDashboard = () => {
             {/* <TotalUser  sFetcher /> */}
 
             {/* Stats Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
                 <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -241,7 +241,7 @@ const AdminDashboard = () => {
               </div>
 
               {/* Quick Stats and Recent Transactions */}
-            {/* <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
               <Card className="lg:col-span-1">
                 <CardHeader>
                   <CardTitle className="flex items-center">
@@ -297,7 +297,7 @@ const AdminDashboard = () => {
                   </div>
                 </CardContent>
               </Card>
-            </div> */}
+            </div>
         </div>
       </div>
     </div>

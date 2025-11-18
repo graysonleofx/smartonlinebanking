@@ -331,7 +331,7 @@
             
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="flex items-center w-full sm:w-auto">
+                <Button className="flex items-center w-xlg sm:w-auto">
                   <Plus className="w-4 h-4 mr-2" />
                   <span className="hidden sm:inline">Add Transaction</span>
                   <span className="sm:hidden">Add</span>
@@ -415,8 +415,8 @@
           <Card className="mb-4 md:mb-6">
             <CardContent className="pt-4 md:pt-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-                <div className="relative col-span-1 sm:col-span-2 lg:col-span-1">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <div className="relative flex text-center col-span-1 sm:col-span-2 lg:col-span-1">
+                  {/* <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" /> */}
                   <Input
                     placeholder="Search transactions..."
                     value={searchTerm}

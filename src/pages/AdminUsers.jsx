@@ -402,7 +402,7 @@ const AdminUsers = () => {
           
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="flex items-center w-full sm:w-auto">
+              <Button className="flex items-center w-xlg sm:w-auto">
                 <Plus className="w-4 h-4 mr-2" />
                 <span className="hidden sm:inline">Add User</span>
                 <span className="sm:hidden">Add</span>
@@ -479,8 +479,8 @@ const AdminUsers = () => {
         {/* Search */}
         <Card className="mb-4 md:mb-6">
           <CardContent className="pt-4 md:pt-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <div className="relative flex items-center">
+              <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search users..."
                 value={searchTerm}

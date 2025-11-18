@@ -169,12 +169,11 @@ const OpenAccount = () => {
     document.getElementById('openAccountButton').disabled = true;
     document.getElementById('openAccountButton').innerText = 'Creating Account...';
 
-  
     try {
       // Create Supabase Auth user
       const { data, error: authError } = await supabase.auth.signUp({
         email: formData.email,
-        password: formData.confirmPassword
+        password: formData.confirmPassword 
       });
 
       if (authError) throw authError;
