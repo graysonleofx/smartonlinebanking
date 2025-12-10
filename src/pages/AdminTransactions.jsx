@@ -17,10 +17,13 @@
     TrendingDown,
     Activity,
     Search,
+    Trash2,
+    Edit,
     Menu
   } from 'lucide-react';
   import supabase from '@/lib/supabaseClient'; // adjust path/name to your client export
   import { use } from 'react';
+import { set } from 'date-fns';
 
 
   const AdminTransactions = () => {
@@ -33,6 +36,8 @@
     const [filterType, setFilterType] = useState('all');
     const [filterStatus, setFilterStatus] = useState('all');
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+    const [selectedTransaction, setSelectedTransaction] = useState(null);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [formData, setFormData] = useState({
       userId: '',
       userName: '',
@@ -300,6 +305,146 @@
       }
     };
 
+    const handleDeleteTransaction = async (transactionId) => {
+      // Implement delete functionality here
+      const confirmed = window.confirm('Are you sure you want to delete this transaction?');
+      if (!confirmed) return;
+
+      try {
+        setLoading(true);
+        const { error } = await supabase.from('transactions').delete().eq('id', transactionId);
+
+        if (error) {
+          toast({ title: 'Error', description: error.message, variant: 'destructive' });
+          return;
+        }
+
+        setTransactions(prev => prev.filter(t => t.id !== transactionId));
+        toast({
+          title: 'Transaction Deleted',
+          description: `Transaction ${transactionId} has been deleted`
+        });
+      } catch (err) {
+        toast({ title: 'Error', description: err.message || 'Failed to delete', variant: 'destructive' });
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    const handleEditTransaction = async (transactionId) => {
+      setSelectedTransaction(transactionId);
+      setFormData(prev => {
+        const txn = transactions.find(t => t.id === transactionId);
+        if (txn) {
+          return {
+            email: txn.email,
+            userName: txn.userName,
+            from_account: txn.from_account,
+            type: txn.type,
+            amount: txn.amount,
+            note: txn.note,
+            status: txn.status,
+            date: txn.timestamp ? new Date(txn.timestamp).toISOString().split('T')[0] : '' // format as YYYY-MM-DD
+          };
+        }
+        return prev;
+      });
+      setIsEditDialogOpen(true);
+    }
+    // const handleSaveEditTransaction = async (transactionId) => {
+    //   if (!transactionId) return;
+
+    //   const updatePayload = {
+    //     email: formData.email,
+    //     account_name: formData.userName,
+    //     from_account: formData.from_account,
+    //     type: formData.type,
+    //     amount: Number(formData.amount),
+    //     status: formData.status,
+    //       created_at: formData.date ? new Date(formData.date).toISOString() : undefined,
+    //     note: formData.note || 'Admin transaction',
+    //   };
+
+    //   try {
+    //     setLoading(true);
+    //     const { error } = await supabase.from('transactions').update(updatePayload).eq('id', transactionId);
+
+    //     if (error) {
+    //       toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    //       return;
+    //     }
+
+    //     setTransactions(prev => prev.map(t => t.id === transactionId ? { ...t, ...updatePayload } : t));
+    //     setIsEditDialogOpen(false);
+    //     toast({
+    //       title: 'Transaction Updated',
+    //       description: `Transaction ${transactionId} has been updated`
+    //     });
+    //   } catch (err) {
+    //     toast({ title: 'Error', description: err.message || 'Failed to update', variant: 'destructive' });
+    //   } finally {
+    //     setLoading(false);
+    //   }
+    // }
+
+    const handleSaveEditTransaction = async (transactionId) => {
+      if (!transactionId) return;
+
+      const updatedDate = formData.date
+        ? new Date(formData.date) // convert date string to Date object
+        : new Date(); // fallback to now
+
+      const updatePayload = {
+        email: formData.email,
+        account_name: formData.userName,
+        from_account: formData.from_account,
+        type: formData.type,
+        amount: Number(formData.amount),
+        note: formData.note || 'Admin transaction',
+        status: formData.status,
+        created_at: updatedDate.toISOString(), // save full ISO timestamp
+      };
+
+      try {
+        setLoading(true);
+
+        const { error } = await supabase
+          .from('transactions')
+          .update(updatePayload)
+          .eq('id', transactionId);
+
+        if (error) {
+          toast({ title: 'Error', description: error.message, variant: 'destructive' });
+          return;
+        }
+
+        // Update local dashboard state
+        setTransactions(prev =>
+          prev.map(t =>
+            t.id === transactionId
+              ? {
+                  ...t,
+                  ...updatePayload,
+                  timestamp: updatePayload.created_at, // ensure dashboard uses updated date
+                }
+              : t
+          )
+        );
+
+        setIsEditDialogOpen(false);
+        toast({
+          title: 'Transaction Updated',
+          description: `Transaction ${transactionId} has been updated`
+        });
+      } catch (err) {
+        toast({ title: 'Error', description: err.message || 'Failed to update', variant: 'destructive' });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+
+
     return (
       <div className="flex min-h-screen bg-background">
         <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -477,6 +622,7 @@
                       <TableHead className="min-w-[80px]">Type</TableHead>
                       <TableHead className="min-w-[100px]">Amount</TableHead>
                       <TableHead className="min-w-[80px]">Status</TableHead>
+                      <TableHead className="min-w-[80px]">Action</TableHead>
                       <TableHead className="hidden lg:table-cell min-w-[120px]">Date</TableHead>
                       <TableHead className="hidden xl:table-cell min-w-[150px]">Note</TableHead>
                     </TableRow>
@@ -511,6 +657,26 @@
                         <TableCell className="hidden xl:table-cell max-w-xs truncate text-xs text-muted-foreground">
                           {transaction.note}
                         </TableCell>
+                        <TableCell className=" lg:table-cell text-xs">
+                          <div className="flex items-center space-x-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="p-2"
+                              onClick={() => handleEditTransaction(transaction.id)}
+                            >
+                              <Edit className="w-3 h-3 md:w-4 md:h-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="p-2"
+                              onClick={() => handleDeleteTransaction(transaction.id)}
+                            >
+                              <Trash2 className="w-3 h-3 md:w-4 md:h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -519,6 +685,100 @@
               {loading && <div className="p-4 text-center text-sm text-muted-foreground">Loading...</div>}
             </CardContent>
           </Card>
+
+          {/* Edit Transaction Dialog */}
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit Transaction</DialogTitle>
+                <DialogDescription>Modify transaction details</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="transaction-type-edit">Transaction Type</Label>
+                  <Select value={formData.type} onValueChange={(value) => setFormData(prev => ({ ...prev, type: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="deposit">Deposit (Credit)</SelectItem>
+                      <SelectItem value="withdrawal">Withdrawal (Debit)</SelectItem>
+                      <SelectItem value="transfer">Transfer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="user-select-edit">Select User</Label>
+                  <Select onValueChange={handleUserSelect} value={formData.email}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose a user" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {users.length === 0 && (
+                        <p className="p-2 text-sm text-muted-foreground">No users found</p>
+                      )}
+
+                      {users.map((user) => (
+                        <SelectItem key={user.email} value={user.email}>
+                          {user.full_name} — {user.email} ({user.account_number})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="amount-edit">Amount ($)</Label>
+                  <Input
+                    id="amount-edit"
+                    type="number"
+                    value={formData.amount}
+                    onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="note-edit">Note (Optional)</Label>
+                  <Textarea
+                    id="note-edit"
+                    value={formData.note}
+                    onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
+                    placeholder="Transaction description..."
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="date-edit">Date</Label>
+                  <Input
+                    id="date-edit"
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
+                  />
+                </div>
+                <div> 
+                  <Label htmlFor="status-edit">Status</Label>
+                  <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="failed">Failed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={() => handleSaveEditTransaction(selectedTransaction)}>
+                  Save Changes
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           </div>
         </div>
       </div>

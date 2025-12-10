@@ -147,6 +147,8 @@ const OpenAccount = () => {
 
   // };
 
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -173,10 +175,19 @@ const OpenAccount = () => {
       // Create Supabase Auth user
       const { data, error: authError } = await supabase.auth.signUp({
         email: formData.email,
-        password: formData.confirmPassword 
+        password: formData.confirmPassword
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        console.error('Exception:', authError.message);
+        if (authError?.error) console.error('Inner error:', JSON.stringify(authError.error, null, 2));
+        if (authError.message.includes('already registered')) {
+          throw new Error('Email is already registered');
+        } else {
+          console.error('Auth error:', authError);
+          throw new Error('Failed to create account');
+        }
+      };
 
       const user = data?.user;
       if (!user) throw new Error('User not returned from Supabase auth');
@@ -212,7 +223,8 @@ const OpenAccount = () => {
 
       setAccountCreated(true);
     } catch (err) {
-      console.error('Error creating account:', err);
+      console.error('Exception:', err);
+      if (err?.error) console.error('Inner error:', JSON.stringify(err.error, null, 2));
       toast({
         title: "Error",
         description: err.message || 'Database error saving new user',
@@ -222,24 +234,112 @@ const OpenAccount = () => {
       document.getElementById('openAccountButton').disabled = false;
       document.getElementById('openAccountButton').innerText = 'Open Account';
     }
-  };
+  };  
 
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+
+  //   // 1️⃣ Password validations
+  //   if (formData.password !== formData.confirmPassword) {
+  //     return toast({ title: "Error", description: "Passwords do not match", variant: "destructive" });
+  //   }
+  //   if (formData.password.length < 8) {
+  //     return toast({ title: "Error", description: "Password must be at least 8 characters", variant: "destructive" });
+  //   }
+
+  //   // 2️⃣ Required fields
+  //   if (!formData.fullName || !formData.email || !formData.phone || !formData.dateOfBirth) {
+  //     return toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" });
+  //   }
+
+  //   const button = document.getElementById('openAccountButton');
+  //   button.disabled = true;
+  //   button.innerText = 'Creating Account...';
+
+  //   try {
+  //     // 3️⃣ Create Supabase Auth user
+  //     const { data: authData, error: authError } = await supabase.auth.signUp({
+  //       email: formData.email,
+  //       password: formData.confirmPassword
+  //     });
+
+  //     if (authError) {
+  //       throw new Error(authError.message.includes('already registered')
+  //         ? 'Email is already registered'
+  //         : 'Failed to create account');
+  //     }
+
+  //     const user = authData?.user;
+  //     if (!user) throw new Error('User not returned from Supabase auth');
+
+  //     // 4️⃣ Generate account number and balances
+  //     const accountNumber = generateAccountNumber();
+  //     setGeneratedAccountNumber(accountNumber);
+
+  //     const checkingBalance = parseFloat(formData.checking_account_balance) || 0;
+  //     const savingsBalance = parseFloat(formData.savings_account_balance) || 0;
+
+  //     // 5️⃣ Insert into accounts table (RLS-safe)
+  //     const { error: accountError } = await supabase
+  //       .from('accounts')
+  //       .insert([{
+  //         id: user.id, // MUST match auth.uid()
+  //         full_name: formData.fullName,
+  //         email: formData.email,
+  //         phone: formData.phone,
+  //         date_of_birth: formData.dateOfBirth,
+  //         national_id: formData.nationalId || null,
+  //         account_number: accountNumber,
+  //         referral_code: formData.referralCode || null,
+  //         checking_account_balance: checkingBalance,
+  //         savings_account_balance: savingsBalance,
+  //         balance: checkingBalance + savingsBalance
+  //       }]);
+
+  //     if (accountError) throw new Error(accountError.message || 'Failed to create account record');
+
+  //     // 6️⃣ Save referral info locally if provided
+  //     if (formData.referralCode) localStorage.setItem('referralUsed', formData.referralCode);
+
+  //     setAccountCreated(true);
+  //     toast({ title: "Success", description: "Account created successfully!" });
+
+  //   } catch (err) {
+  //     console.error('Exception:', err);
+  //     toast({
+  //       title: "Error",
+  //       description: err.message || 'Database error saving new user',
+  //       variant: "destructive"
+  //     });
+  //   } finally {
+  //     button.disabled = false;
+  //     button.innerText = 'Open Account';
+  //   }
+  // };
 
   const proceedToDashboard = () => {
-    localStorage.setItem('userSession', JSON.stringify({
-      id: user.id,                      // 🔥 MOST IMPORTANT
-      fullName: formData.fullName,
-      email: formData.email,
-      phone: formData.phone,
-      dateOfBirth: formData.dateOfBirth,
-      address: "",
-      occupation: "",
-      accountNumber: generatedAccountNumber,
-      checking_account_balance: 0,
-      savings_account_balance: 0
-    }));
+    const user = supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) {
+        toast({ title: "Error", description: "User not authenticated", variant: "destructive" });
+        return;
+      } 
 
-    navigate('/dashboard');
+        // Store user session data locally
+      localStorage.setItem('userSession', JSON.stringify({
+        id: user.id,                      // 🔥 MOST IMPORTANT
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        dateOfBirth: formData.dateOfBirth,
+        address: "",
+        occupation: "",
+        accountNumber: generatedAccountNumber,
+        checking_account_balance: 0,
+        savings_account_balance: 0
+      }));
+      navigate('/dashboard');
+    });
+
   };
 
   // const proceedToDashboard = async () => {
