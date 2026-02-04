@@ -36,12 +36,15 @@ const Login = () => {
     if (!email || !password) {
       // Handle empty fields
       toast({ description: 'Please fill in all fields', duration: 4000 });
+      document.getElementById('login-button').disabled = false;
+      document.getElementById('login-button').innerText = 'Log In Securely';
+      
       return;
     }
     if (password.length < 8) {
       toast({ description: 'Password must be at least 8 characters long', duration: 4000 });
       document.getElementById('login-button').disabled = false;
-      document.getElementById('login-button').innerText = 'Log in';
+      document.getElementById('login-button').innerText = 'Log In Securely';
 
       return;
     }
@@ -64,6 +67,8 @@ const Login = () => {
       const otpResponse = await sendOtp(email);
       if (!otpResponse.success) {
         toast({ description: 'Failed to send OTP. Please try again.', duration: 4000 });
+        document.getElementById('login-button').disabled = false;
+        document.getElementById('login-button').innerText = 'Log In Securely';
         return;
       }
       setOtpValue('');
@@ -86,6 +91,9 @@ const Login = () => {
       toast({ description: 'Login failed. Please check your credentials.', duration: 4000 });
       return;
     }
+
+    document.getElementById('login-button').disabled = false;
+    document.getElementById('login-button').innerText = 'Log In Securely';
 
     // const user = data?.user;
     // if (!user) {

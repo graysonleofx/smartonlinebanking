@@ -35,7 +35,7 @@ const AdminLogin = () => {
     setIsLoading(true);
 
     // Optional: Hardcoded admin credentials (for extra security)
-    const hardcodedAdmin = formData.email === 'admin@thisbank.co' && formData.password === '1937519375';
+    // const hardcodedAdmin = formData.email === 'admin@thisbank.co' && formData.password === '1937519375';
     
     // Supabase authentication
     const { data, error } = await supabase.auth.signInWithPassword({

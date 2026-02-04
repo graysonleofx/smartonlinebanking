@@ -76,6 +76,32 @@ const AdminUsers = () => {
     setUsers(mapped);
   };
 
+  // const fetchUsers = async () => {
+  //   setLoading(true);
+  //   const { data, error } = await supabase
+  //     .from('accounts')
+  //     .select('*')
+  //     .order('created_at', { ascending: false });
+  //   setLoading(false);
+
+  //   if (error) {
+  //     toast({ title: 'Failed to load users', description: error.message });
+  //     return;
+  //   }
+
+  //   setUsers(data.map(u => ({
+  //     id: u.id,
+  //     full_name: u.full_name,
+  //     email: u.email,
+  //     accountNumber: u.account_number,
+  //     checking_account_balance: Number(u.checking_account_balance) || 0,
+  //     savings_account_balance: Number(u.savings_account_balance) || 0,
+  //     status: u.status || 'active',
+  //     createdAt: u.created_at
+  //   })));
+  // };
+
+
   const filteredUsers = users.filter(user =>
     user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -203,6 +229,100 @@ const AdminUsers = () => {
   };
 
 
+  // const handleAddUser = async () => {
+  //   if (!formData.full_name || !formData.email) {
+  //     toast({
+  //       title: 'Validation Error',
+  //       description: 'Full name and email are required'
+  //     });
+  //     return;
+  //   }
+
+  //   const nextAccountNumber = generateAccountNumber();
+  //   setGeneratedAccountNumber(nextAccountNumber);
+
+  //   const password = formData.password || Math.random().toString(36).slice(-8);
+
+  //   try {
+  //     // Create auth user (admin)
+  //     const { data, error } = await supabase.auth.signUp({
+  //       email: formData.email,
+  //       password: formData.password,
+  //     });
+
+  //     if (error) throw error;
+  //     const userId = data?.user?.id;
+  //     if (!userId) throw new Error('No user id returned from auth');
+
+  //     // Insert account row in DB
+  //     const checking = parseFloat(formData.checking_account_balance) || 0;
+  //     const savings = parseFloat(formData.savings_account_balance) || 0;
+  //     const insertPayload = {
+  //       id: userId,
+  //       full_name: formData.full_name,
+  //       email: formData.email,
+  //       account_number: nextAccountNumber,
+  //       checking_account_balance: checking,
+  //       savings_account_balance: savings,
+  //       balance: checking + savings,
+  //       status: 'active'
+  //     };
+
+  //     const { error: dbError } = await supabase.from('accounts').insert([insertPayload]);
+  //     if (dbError) {
+  //       // cleanup created auth user if DB insert failed
+  //       if (supabase.auth?.admin?.deleteUser) {
+  //         try { await supabase.auth.admin.deleteUser(userId); } catch (e) { /* ignore cleanup failure */ }
+  //       }
+  //       throw dbError;
+  //     }
+
+  //     // Keep UI shape consistent with fetchUsers mapping
+  //     const newUser = {
+  //       id: userId.toString(),
+  //       full_name: formData.full_name,
+  //       email: formData.email,
+  //       accountNumber: nextAccountNumber,
+  //       checking_account_balance: checking,
+  //       savings_account_balance: savings,
+  //       status: 'active',
+  //       createdAt: new Date().toISOString().split('T')[0]
+  //     };
+
+  //     // setUsers(prev => [newUser, ...prev]);
+  //     await fetchUsers();
+
+  //     setIsAddDialogOpen(false);
+  //     setFormData({
+  //       full_name: '',
+  //       email: '',
+  //       password: '',
+  //       checking_account_balance: '',
+  //       savings_account_balance: ''
+  //     });
+
+  //     toast({
+  //       title: 'User Added',
+  //       description: 'New user has been successfully created'
+  //     });
+  //   } catch (err) {
+  //     const msg = err?.message || String(err);
+  //     // Generic toast for failure + some common checks
+  //     toast({
+  //       title: 'Add User Failed',
+  //       description: msg
+  //     });
+
+  //     if (msg.includes('already registered') || msg.toLowerCase().includes('already exists')) {
+  //       toast({ title: 'User Already Exists', description: 'A user with this email already exists.' });
+  //     } else if (msg.includes('Password should be at least') || msg.toLowerCase().includes('password')) {
+  //       toast({ title: 'Weak Password', description: 'Password should be at least 6 characters long.' });
+  //     } else if (msg.toLowerCase().includes('invalid email')) {
+  //       toast({ title: 'Invalid Email', description: 'Please enter a valid email address.' });
+  //     }
+  //   }
+  // };
+
   const handleAddUser = async () => {
     if (!formData.full_name || !formData.email) {
       toast({
@@ -218,7 +338,7 @@ const AdminUsers = () => {
     const password = formData.password || Math.random().toString(36).slice(-8);
 
     try {
-      // Create auth user (admin)
+      // 1️⃣ Create auth user (admin)
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -228,7 +348,7 @@ const AdminUsers = () => {
       const userId = data?.user?.id;
       if (!userId) throw new Error('No user id returned from auth');
 
-      // Insert account row in DB
+      // 2️⃣ Insert account row in DB
       const checking = parseFloat(formData.checking_account_balance) || 0;
       const savings = parseFloat(formData.savings_account_balance) || 0;
       const insertPayload = {
@@ -251,19 +371,8 @@ const AdminUsers = () => {
         throw dbError;
       }
 
-      // Keep UI shape consistent with fetchUsers mapping
-      const newUser = {
-        id: userId.toString(),
-        full_name: formData.full_name,
-        email: formData.email,
-        accountNumber: nextAccountNumber,
-        checking_account_balance: checking,
-        savings_account_balance: savings,
-        status: 'active',
-        createdAt: new Date().toISOString().split('T')[0]
-      };
-
-      setUsers(prev => [newUser, ...prev]);
+      // 3️⃣ Refetch all users to update table
+      await fetchUsers();
 
       setIsAddDialogOpen(false);
       setFormData({
@@ -278,13 +387,10 @@ const AdminUsers = () => {
         title: 'User Added',
         description: 'New user has been successfully created'
       });
+
     } catch (err) {
       const msg = err?.message || String(err);
-      // Generic toast for failure + some common checks
-      toast({
-        title: 'Add User Failed',
-        description: msg
-      });
+      toast({ title: 'Add User Failed', description: msg });
 
       if (msg.includes('already registered') || msg.toLowerCase().includes('already exists')) {
         toast({ title: 'User Already Exists', description: 'A user with this email already exists.' });
@@ -296,80 +402,6 @@ const AdminUsers = () => {
     }
   };
 
-  // const handleAddUser = async () => {
-  //   if (!formData.full_name || !formData.email) {
-  //     toast({
-  //       title: 'Validation Error',
-  //       description: 'Full name and email are required',
-  //     });
-  //     return;
-  //   }
-
-  //   // Auto-generate a password if not provided
-  //   const password = formData.password || Math.random().toString(36).slice(-8);
-  //   const checking = parseFloat(formData.checking_account_balance) || 0;
-  //   const savings = parseFloat(formData.savings_account_balance) || 0;
-
-  //   try {
-  //     // 1. Sign up user (client-side)
-  //     const { data: authData, error: authError } = await supabase.auth.signUp({
-  //       email: formData.email,
-  //       password,
-  //     });
-
-  //     if (authError) throw authError;
-
-  //     const userId = authData.user?.id;
-  //     if (!userId) throw new Error('User ID not returned. Signup failed.');
-
-  //     // 2. Insert into accounts table
-  //     const { error: dbError } = await supabase.from('accounts').insert([{
-  //       id: userId,
-  //       full_name: formData.full_name,
-  //       email: formData.email,
-  //       account_number: '3032' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0'),
-  //       checking_account_balance: checking,
-  //       savings_account_balance: savings,
-  //       balance: checking + savings,
-  //       status: 'active',
-  //     }]);
-
-  //     if (dbError) throw dbError;
-
-  //     // 3. Update UI
-  //     const newUser = {
-  //       id: userId,
-  //       full_name: formData.full_name,
-  //       email: formData.email,
-  //       accountNumber: '3032' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0'),
-  //       checking_account_balance: checking,
-  //       savings_account_balance: savings,
-  //       status: 'active',
-  //       createdAt: new Date().toISOString().split('T')[0],
-  //     };
-
-  //     setUsers(prev => [newUser, ...prev]);
-  //     setIsAddDialogOpen(false);
-  //     setFormData({
-  //       full_name: '',
-  //       email: '',
-  //       password: '',
-  //       checking_account_balance: '',
-  //       savings_account_balance: ''
-  //     });
-
-  //     toast({
-  //       title: 'User Added',
-  //       description: `User has been created. Password: ${password}`,
-  //     });
-
-  //   } catch (err) {
-  //     toast({
-  //       title: 'Add User Failed',
-  //       description: err?.message || 'Unknown error',
-  //     });
-  //   }
-  // };
 
   return (
     <div className="flex min-h-screen bg-background">

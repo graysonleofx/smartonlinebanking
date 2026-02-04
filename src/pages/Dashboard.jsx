@@ -759,7 +759,14 @@ const Dashboard = () => {
                     const colorClass = sign === '+' ? 'text-banking-blue' : 'text-banking-orange';
                     return (
                       <TableRow key={transaction.id}>
-                        <TableCell className="text-xs md:text-sm">{transaction.date}</TableCell>
+                        <TableCell className="">
+                          {transaction.date ? new Date(transaction.date).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          }) : ''}
+                        </TableCell>
+
                         <TableCell className="text-xs md:text-sm">{transaction.note}</TableCell>
                         <TableCell className="text-xs md:text-sm hidden md:table-cell">
                           <Badge variant={transaction.type === 'credit' ? 'default' : 'secondary'} className="text-xs">
