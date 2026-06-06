@@ -79,7 +79,7 @@ const ContactUs = () => {
 
   const contactDetails = {
     phone: '+1 (555) 123-4567',
-    email: 'support@federaledge.com',
+    email: 'customerservice@federaledgefinance.com',
     address: '123 Finance Drive, Suite 400, Melbourne VIC 3000, Australia',
     hours: [
       { days: 'Mon - Fri', times: '9:00 AM - 6:00 PM' },
@@ -221,7 +221,7 @@ const ContactUs = () => {
                   </div>
                 </li>
 
-                <li className="flex items-start gap-3">
+                {/* <li className="flex items-start gap-3">
                   <span className="flex-none bg-primary/10 text-primary p-2 rounded-lg">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M3 5v14a2 2 0 0 0 2 2h14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/><path d="M7 7h10v10H7z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   </span>
@@ -229,7 +229,7 @@ const ContactUs = () => {
                     <p className="text-sm font-medium text-gray-800">Phone</p>
                     <a href={`tel:${contactDetails.phone.replace(/[^0-9+]/g, '')}`} className="text-sm text-gray-600 hover:text-primary">{contactDetails.phone}</a>
                   </div>
-                </li>
+                </li> */}
 
                 <li className="flex items-start gap-3">
                   <span className="flex-none bg-primary/10 text-primary p-2 rounded-lg">

@@ -259,6 +259,8 @@ const Withdraw = () => {
         return;
       }
 
+      alert('OTP verified! Processing your withdrawal.');
+
       const amount = parseFloat(formData.amount);
 
       // If user's account is pending — record a pending transaction and show pending receipt

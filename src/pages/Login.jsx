@@ -80,15 +80,21 @@ const Login = () => {
       if (error.message.includes("User not found")) {
         // Handle user not found error
         setErrorMessage("User not found. Please check your email or phone number.");
+        document.getElementById('login-button').disabled = false;
+        document.getElementById('login-button').innerText = 'Log In Securely';
         navigate('/open-account');
       } else if (error.message.includes("Invalid login credentials")) {
         setErrorMessage("Invalid login credentials. Please try again.");
+        document.getElementById('login-button').disabled = false;
+        document.getElementById('login-button').innerText = 'Log In Securely';
         navigate('/login');
       }
     }
 
     if (error) {
       toast({ description: 'Login failed. Please check your credentials.', duration: 4000 });
+      document.getElementById('login-button').disabled = false;
+      document.getElementById('login-button').innerText = 'Log In Securely';
       return;
     }
 
