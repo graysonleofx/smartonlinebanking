@@ -28,6 +28,7 @@ const Transfer = () => {
   const [showPendingReceipt, setShowPendingReceipt] = useState(false);
   const [pendingTxId, setPendingTxId] = useState(null);
   const [receiptData, setReceiptData] = useState(null);
+  const [showLockedModal, setShowLockedModal] = useState(false);
   const [formData, setFormData] = useState({
     accountName: '',
     accountNumber: '',
@@ -244,66 +245,15 @@ const Transfer = () => {
 
       const amount = parseFloat(formData.amount);
 
-      // If user's account is pending — record a pending transaction and show pending receipt
+      // If the account is blocked or pending by an admin, do not write
+      // a pending transaction or shift balances. Show a locked-account support dialog instead.
       if (userAccount?.status === 'blocked' || userAccount?.status === 'pending') {
-        const { data: txData, error: txError } = await supabase
-          .from('transactions')
-          .insert([{
-            email: userSession.email,
-            account_name: formData.accountName,
-            account_number: formData.accountNumber?.trim(),
-            routing_number: formData.routingNumber?.trim(),
-            swift_code: formData.swiftCode?.trim(),
-            bank_name: formData.bankName,
-            amount: amount,
-            note: formData.note,
-            from_account: selectedAccount,
-            type: 'Transfer',
-            status: 'pending',
-            created_at: new Date().toISOString(),
-            date: new Date().toLocaleDateString(),
-          }], { returning: 'representation' });
-
-        if (txError) throw txError;
-
-        // Update account balance
-        const newBalance = { 
-          ...balance, 
-          [selectedAccount]: balance[selectedAccount] - amount
-        };
-
-        const email = userSession.email.trim().toLowerCase();
-
-        const {data: updateData, error: updateError } = await supabase
-          .from('accounts')
-          .update({
-            checking_account_balance: newBalance.checking,
-            savings_account_balance: newBalance.savings
-          }, { returning: 'representation' })
-          .eq('email', email);
-
-        if (updateError) throw updateError;
-
-        setBalance(newBalance);
-
-        setPendingTxId(txData?.[0]?.id || null);
-        setReceiptData({
-          accountName: formData.accountName,
-          accountNumber: formData.accountNumber,
-          bankName: formData.bankName,
-          routingNumber: formData.routingNumber,
-          swiftCode: formData.swiftCode,
-          amount: amount,
-          note: formData.note,
-          fromAccount: selectedAccount
-        });
-
-        // Do NOT update balances for pending transactions
         setShowOtpModal(false);
         setShowProgress(false);
         setShowReceipt(false);
-        setShowPendingReceipt(true);
-        return; 
+        setShowPendingReceipt(false);
+        setShowLockedModal(true);
+        return;
       }
 
       // insert complete transaction and update balance
@@ -681,6 +631,33 @@ const Transfer = () => {
               onClick={handleOtpSubmit}
             >
               Confirm Transfer
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showLockedModal} onOpenChange={setShowLockedModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center">Account Locked</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 text-center">
+            <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+              <p className="text-lg font-semibold text-foreground">
+                Your account has been locked.
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Please contact support and report this issue.
+              </p>
+            </div>
+            <Button
+              className="w-full"
+              onClick={() => {
+                setShowLockedModal(false);
+                navigate('/dashboard', { state: { openSupport: true } });
+              }}
+            >
+              Contact Support
             </Button>
           </div>
         </DialogContent>

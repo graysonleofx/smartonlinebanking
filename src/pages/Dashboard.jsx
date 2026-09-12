@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -16,6 +16,7 @@ import supabase from  '../lib/supabaseClient';
 import { data } from 'autoprefixer';
 const Dashboard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const {
     toast
   } = useToast();
@@ -39,6 +40,12 @@ const Dashboard = () => {
   });
   const [userName, setUserName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
+
+  useEffect(() => {
+    if (location.state?.openSupport) {
+      setActiveTab('support');
+    }
+  }, [location.state]);
 
   useEffect(() => {
     const fetchBalances = async() => {
