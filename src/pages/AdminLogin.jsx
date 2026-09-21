@@ -53,9 +53,17 @@ const AdminLogin = () => {
       return;
     }
 
-    // Optional: You can also check if the user is an admin in Supabase (role column)
-    // Example: const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
-    // if (profile?.role !== 'admin') { ... }
+    const { data: account, error: roleError } = await supabase
+      .from('accounts')
+      .select('role')
+      .eq('id', data.user.id)
+      .single();
+    if (roleError || account?.role !== 'admin') {
+      await supabase.auth.signOut();
+      toast({ title: "Access denied", description: "This account is not an administrator.", variant: "destructive" });
+      setIsLoading(false);
+      return;
+    }
 
     // Store admin session in localStorage for dashboard protection
     localStorage.setItem('admin', JSON.stringify({

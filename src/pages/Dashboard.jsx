@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Home, CreditCard, ArrowDownToLine, ArrowUpFromLine, Send, User, HelpCircle, LogOut, Bell, Eye, EyeOff, Gift, Settings, Copy, Check } from 'lucide-react';
 import supabase from  '../lib/supabaseClient';
 import { data } from 'autoprefixer';
+import ChequeDepositForm from '@/components/ChequeDepositForm';
 const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -24,6 +25,7 @@ const Dashboard = () => {
   const [showBalance, setShowBalance] = useState(true);
   const [activeTab, setActiveTab] = useState('home');
   const [showDepositModal, setShowDepositModal] = useState(false);
+  const [depositMethod, setDepositMethod] = useState('wire');
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
@@ -662,7 +664,7 @@ const Dashboard = () => {
                   {transactions.slice(0, 5).map(transaction => {
                     // normalize type for reliable matching
                     const type = (transaction.type || '').toLowerCase();
-                    const positiveTypes = ['credit', 'deposit'];
+                    const positiveTypes = ['credit', 'deposit', 'cheque_deposit'];
                     const negativeTypes = ['debit', 'withdraw', 'withdrawal', 'transfer'];
                     const sign = positiveTypes.includes(type) ? '+' : (negativeTypes.includes(type) ? '-' : (transaction.amount > 0 ? '+' : '-'));
                     const colorClass = sign === '+' ? 'text-banking-blue' : 'text-banking-orange';
@@ -674,8 +676,8 @@ const Dashboard = () => {
                         </TableCell>
                         <TableCell className="text-xs md:text-sm hidden md:table-cell">{transaction.date}</TableCell>
                         <TableCell>
-                          <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'} className={transaction.status === 'completed' ? 'text-white' : 'text-yellow-600'}>
-                            {transaction.status === 'completed' ? 'Completed' : 'Pending'}
+                          <Badge variant={transaction.status === 'completed' || transaction.status === 'approved' ? 'default' : transaction.status === 'rejected' ? 'destructive' : 'secondary'} className={transaction.status === 'completed' || transaction.status === 'approved' ? 'text-white' : transaction.status === 'rejected' ? '' : 'text-yellow-600'}>
+                            {transaction.status === 'completed' ? 'Completed' : transaction.status === 'approved' ? 'Approved' : transaction.status === 'rejected' ? 'Rejected' : 'Pending'}
                           </Badge>
                         </TableCell>
                       </TableRow>
@@ -760,7 +762,7 @@ const Dashboard = () => {
                 <TableBody>
                   {transactions.map(transaction => {
                     const type = (transaction.type || '').toLowerCase();
-                    const positiveTypes = ['credit', 'deposit'];
+                    const positiveTypes = ['credit', 'deposit', 'cheque_deposit'];
                     const negativeTypes = ['debit', 'withdraw', 'withdrawal', 'transfer'];
                     const sign = positiveTypes.includes(type) ? '+' : (negativeTypes.includes(type) ? '-' : (transaction.amount > 0 ? '+' : '-'));
                     const colorClass = sign === '+' ? 'text-banking-blue' : 'text-banking-orange';
@@ -784,8 +786,8 @@ const Dashboard = () => {
                           {sign}${Math.abs(transaction.amount).toLocaleString()} 
                         </TableCell>
                         <TableCell>
-                          <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'} className={transaction.status === 'completed' ? 'text-white' : 'text-yellow-600'}>
-                            {transaction.status === 'completed' ? 'Completed' : 'Pending'}
+                          <Badge variant={transaction.status === 'completed' || transaction.status === 'approved' ? 'default' : transaction.status === 'rejected' ? 'destructive' : 'secondary'} className={transaction.status === 'completed' || transaction.status === 'approved' ? 'text-white' : transaction.status === 'rejected' ? '' : 'text-yellow-600'}>
+                            {transaction.status === 'completed' ? 'Completed' : transaction.status === 'approved' ? 'Approved' : transaction.status === 'rejected' ? 'Rejected' : 'Pending'}
                           </Badge>
                         </TableCell>
                       </TableRow>
@@ -804,6 +806,13 @@ const Dashboard = () => {
             <ArrowDownToLine className="h-5 w-5 md:h-6 md:w-6 text-banking-blue" />
             <h2 className="text-xl md:text-2xl font-bold">Deposit Funds</h2>
             </div>
+
+            <div className="grid grid-cols-2 gap-2 rounded-lg border bg-muted/40 p-1" role="tablist" aria-label="Deposit method">
+              <Button type="button" variant={depositMethod === 'wire' ? 'default' : 'ghost'} onClick={() => setDepositMethod('wire')} role="tab" aria-selected={depositMethod === 'wire'}>Wire Transfer</Button>
+              <Button type="button" variant={depositMethod === 'cheque' ? 'default' : 'ghost'} onClick={() => setDepositMethod('cheque')} role="tab" aria-selected={depositMethod === 'cheque'}>Cheque Deposit</Button>
+            </div>
+
+            {depositMethod === 'cheque' ? <ChequeDepositForm userName={userName} accountNumber={accountNumber} onSubmitted={(transaction) => setTransactions((current) => [transaction, ...current])} /> : <>
                         
             <Card>
               <CardHeader className="pb-3">
@@ -893,6 +902,7 @@ const Dashboard = () => {
                 </Button> */}
               </CardContent>
             </Card>
+            </>}
           </div>}
 
           {activeTab === 'withdraw' && <div className="space-y-4">
@@ -926,7 +936,7 @@ const Dashboard = () => {
       </nav>
 
       {/* Deposit Modal */}
-      <Dialog open={showDepositModal} onOpenChange={setShowDepositModal}>
+      {/* <Dialog open={showDepositModal} onOpenChange={setShowDepositModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Wire Transfer Information</DialogTitle>
@@ -978,7 +988,7 @@ const Dashboard = () => {
             </Button>
           </div>
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
 
       {/* Withdraw Modal */}
       <Dialog open={showWithdrawModal} onOpenChange={setShowWithdrawModal}>

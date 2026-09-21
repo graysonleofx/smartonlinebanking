@@ -17,6 +17,7 @@ import AdminDashboard from "./pages/AdminDashboard.jsx";
 import AdminUsers from "./pages/AdminUsers.jsx";
 import AdminTransactions from "./pages/AdminTransactions.jsx";
 import AdminSettings from "./pages/AdminSettings";
+import AdminPendingDeposits from "./pages/AdminPendingDeposits.jsx";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ const App = () => (
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/users" element={<AdminUsers />} />
           <Route path="/admin/transactions" element={<AdminTransactions />} />
+          <Route path="/admin/pending-deposits" element={<AdminPendingDeposits />} />
           <Route path="/admin/settings" element={<AdminSettings />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

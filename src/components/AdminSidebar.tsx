@@ -47,6 +47,11 @@ const AdminSidebar = ({ isOpen, onClose }: AdminSidebarProps) => {
       icon: CreditCard
     },
     {
+      title: 'Pending Deposits',
+      href: '/admin/pending-deposits',
+      icon: CreditCard
+    },
+    {
       title: 'Settings',
       href: '/admin/settings',
       icon: Settings
